@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Invoice Processor</title>
+    <style>
+      :root {
+        --blue: #2563eb;
+        --blue-600: #1d4ed8;
+        --blue-100: #dbeafe;
+        --gray-50: #f8fafc;
+        --gray-100: #f1f5f9;
+        --gray-200: #e2e8f0;
+        --gray-400: #94a3b8;
+        --gray-700: #334155;
+        --shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "IBM Plex Sans", "Segoe UI", "Tahoma", sans-serif;
+        color: #0f172a;
+        background: radial-gradient(1200px 800px at 10% -10%, #e0f2fe, #f8fafc 45%),
+          radial-gradient(900px 600px at 110% 10%, #dbeafe, transparent 55%),
+          var(--gray-50);
+        min-height: 100vh;
+      }
+
+      .page {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 20px;
+        padding: 24px;
+      }
+
+      .panel {
+        background: white;
+        border-radius: 18px;
+        padding: 20px;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--gray-100);
+      }
+
+      .title {
+        font-size: 24px;
+        font-weight: 700;
+        margin-bottom: 16px;
+      }
+
+      .drop-zone {
+        border: 2px dashed var(--gray-200);
+        border-radius: 14px;
+        padding: 16px;
+        text-align: center;
+        background: #f8fbff;
+        transition: border-color 0.2s ease, background 0.2s ease;
+        cursor: pointer;
+      }
+
+      .drop-zone.dragover {
+        border-color: var(--blue);
+        background: #eff6ff;
+      }
+
+      .actions {
+        margin-top: 16px;
+        display: grid;
+        gap: 10px;
+      }
+
+      button {
+        appearance: none;
+        border: none;
+        background: var(--blue);
+        color: white;
+        padding: 12px 14px;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        transition: transform 0.15s ease, background 0.2s ease;
+      }
+
+      button:hover {
+        background: var(--blue-600);
+        transform: translateY(-1px);
+      }
+
+      button.secondary {
+        background: #0f172a;
+      }
+
+      button.ghost {
+        background: white;
+        color: var(--gray-700);
+        border: 1px solid var(--gray-200);
+      }
+
+      .status {
+        margin-top: 12px;
+        font-size: 13px;
+        color: var(--gray-700);
+        min-height: 20px;
+      }
+
+      .spinner {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        border: 2px solid var(--gray-200);
+        border-top-color: var(--blue);
+        border-radius: 50%;
+        animation: spin 0.9s linear infinite;
+        vertical-align: middle;
+        margin-right: 6px;
+      }
+
+      .invoice-list {
+        margin-top: 16px;
+        max-height: 380px;
+        overflow-y: auto;
+        display: grid;
+        gap: 10px;
+      }
+
+      .invoice-item {
+        border: 1px solid var(--gray-200);
+        border-radius: 12px;
+        padding: 10px;
+        cursor: pointer;
+        transition: background 0.2s ease, border-color 0.2s ease;
+      }
+
+      .invoice-item.selected {
+        background: var(--blue-100);
+        border-color: var(--blue);
+      }
+
+      .invoice-name {
+        font-weight: 600;
+        font-size: 14px;
+      }
+
+      .invoice-meta {
+        font-size: 12px;
+        color: var(--gray-400);
+      }
+
+      .right-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+
+      .search-input {
+        flex: 1;
+        min-width: 180px;
+        padding: 10px 12px;
+        border: 1px solid var(--gray-200);
+        border-radius: 10px;
+        font-size: 14px;
+      }
+
+      .text-area {
+        margin-top: 16px;
+        border: 1px solid var(--gray-200);
+        border-radius: 16px;
+        padding: 16px;
+        min-height: 360px;
+        background: #fbfdff;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        line-height: 1.5;
+      }
+
+      mark {
+        background: #fde047;
+        color: inherit;
+        border-radius: 4px;
+        padding: 0 2px;
+      }
+
+      .stats {
+        display: flex;
+        gap: 16px;
+        margin-top: 12px;
+        color: var(--gray-700);
+        font-size: 13px;
+      }
+
+      .footer-actions {
+        margin-top: 16px;
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      @media (max-width: 900px) {
+        .page {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @keyframes spin {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <section class="panel">
+        <div class="title">Invoice Processor</div>
+        <div class="drop-zone" id="dropZone">
+          <strong>Drag & drop invoices here</strong>
+          <div class="invoice-meta">PDF, JPG, PNG, BMP, TIFF</div>
+        </div>
+        <div class="actions">
+          <button id="uploadFilesBtn">Upload Files</button>
+          <button id="uploadFolderBtn" class="secondary">Upload Folder</button>
+          <button id="refreshBtn" class="ghost">Refresh List</button>
+        </div>
+        <div class="status" id="status"></div>
+        <div class="invoice-meta" id="invoiceCount">0 invoices</div>
+        <div class="invoice-list" id="invoiceList"></div>
+      </section>
+
+      <section class="panel">
+        <div class="right-header">
+          <div>
+            <div class="title" id="selectedTitle">Select an invoice</div>
+            <div class="invoice-meta" id="selectedMeta">No invoice selected</div>
+          </div>
+          <input class="search-input" id="searchInput" placeholder="Search inside text..." />
+        </div>
+        <div class="text-area" id="textArea">Upload or select an invoice to view text.</div>
+        <div class="stats">
+          <div id="matchCount">Matches: 0</div>
+          <div id="charCount">Characters: 0</div>
+        </div>
+        <div class="footer-actions">
+          <button id="copyBtn">Copy Text</button>
+        </div>
+      </section>
+    </div>
+
+    <input type="file" id="fileInput" multiple hidden />
+
+    <script>
+      const API_BASE = "http://localhost:8000";
+
+      const dropZone = document.getElementById("dropZone");
+      const fileInput = document.getElementById("fileInput");
+      const statusEl = document.getElementById("status");
+      const invoiceListEl = document.getElementById("invoiceList");
+      const invoiceCountEl = document.getElementById("invoiceCount");
+      const selectedTitleEl = document.getElementById("selectedTitle");
+      const selectedMetaEl = document.getElementById("selectedMeta");
+      const textAreaEl = document.getElementById("textArea");
+      const searchInputEl = document.getElementById("searchInput");
+      const matchCountEl = document.getElementById("matchCount");
+      const charCountEl = document.getElementById("charCount");
+
+      let invoices = [];
+      let selectedInvoice = null;
+
+      const setStatus = (message, loading = false) => {
+        if (!message) {
+          statusEl.innerHTML = "";
+          return;
+        }
+        statusEl.innerHTML = loading ? `<span class="spinner"></span>${message}` : message;
+      };
+
+      const escapeHtml = (value) =>
+        value
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+
+      const highlightMatches = (text, term) => {
+        if (!term) {
+          return escapeHtml(text);
+        }
+        const safeText = escapeHtml(text);
+        const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const regex = new RegExp(escapedTerm, "gi");
+        return safeText.replace(regex, (match) => `<mark>${match}</mark>`);
+      };
+
+      const updateStats = (text, term) => {
+        const totalChars = text.length;
+        const matchCount = term ? (text.match(new RegExp(term, "gi")) || []).length : 0;
+        matchCountEl.textContent = `Matches: ${matchCount}`;
+        charCountEl.textContent = `Characters: ${totalChars}`;
+      };
+
+      const renderInvoices = () => {
+        invoiceListEl.innerHTML = "";
+        invoices.forEach((invoice) => {
+          const item = document.createElement("div");
+          item.className = "invoice-item";
+          if (selectedInvoice && invoice._id === selectedInvoice._id) {
+            item.classList.add("selected");
+          }
+
+          const createdAt = invoice.created_at ? new Date(invoice.created_at).toLocaleString() : "";
+          const textLength = invoice.extracted_text ? invoice.extracted_text.length : 0;
+
+          item.innerHTML = `
+            <div class="invoice-name">${invoice.filename}</div>
+            <div class="invoice-meta">${createdAt} • ${textLength} chars</div>
+          `;
+
+          item.addEventListener("click", () => {
+            selectedInvoice = invoice;
+            updateSelectedInvoice();
+            renderInvoices();
+          });
+
+          invoiceListEl.appendChild(item);
+        });
+
+        invoiceCountEl.textContent = `${invoices.length} invoices`;
+      };
+
+      const updateSelectedInvoice = () => {
+        if (!selectedInvoice) {
+          selectedTitleEl.textContent = "Select an invoice";
+          selectedMetaEl.textContent = "No invoice selected";
+          textAreaEl.textContent = "Upload or select an invoice to view text.";
+          updateStats("", "");
+          return;
+        }
+
+        selectedTitleEl.textContent = selectedInvoice.filename;
+        selectedMetaEl.textContent = selectedInvoice.created_at
+          ? new Date(selectedInvoice.created_at).toLocaleString()
+          : "";
+
+        const searchTerm = searchInputEl.value.trim();
+        const text = selectedInvoice.extracted_text || "";
+        textAreaEl.innerHTML = highlightMatches(text, searchTerm);
+        updateStats(text, searchTerm);
+      };
+
+      const fetchInvoices = async () => {
+        try {
+          const response = await fetch(`${API_BASE}/invoices`);
+          if (!response.ok) {
+            throw new Error("Failed to fetch invoices");
+          }
+          const data = await response.json();
+          invoices = data.invoices || [];
+          renderInvoices();
+          if (selectedInvoice) {
+            selectedInvoice = invoices.find((inv) => inv._id === selectedInvoice._id) || null;
+            updateSelectedInvoice();
+          }
+        } catch (error) {
+          setStatus(`Error: ${error.message}`);
+        }
+      };
+
+      const uploadFiles = async (files) => {
+        if (!files || files.length === 0) {
+          setStatus("No files selected");
+          return;
+        }
+
+        setStatus("Uploading files...", true);
+
+        for (const file of files) {
+          const formData = new FormData();
+          formData.append("file", file);
+
+          try {
+            const response = await fetch(`${API_BASE}/upload`, {
+              method: "POST",
+              body: formData,
+            });
+
+            const result = await response.json();
+            if (!response.ok) {
+              throw new Error(result.detail || "Upload failed");
+            }
+          } catch (error) {
+            setStatus(`Error: ${error.message}`);
+            return;
+          }
+        }
+
+        setStatus("Upload complete");
+        await fetchInvoices();
+      };
+
+      const uploadFolder = async () => {
+        const folderPath = window.prompt("Enter a folder path on the server machine:");
+        if (!folderPath) {
+          return;
+        }
+
+        setStatus("Processing folder...", true);
+
+        try {
+          const response = await fetch(`${API_BASE}/upload-folder/${encodeURIComponent(folderPath)}`, {
+            method: "POST",
+          });
+          const result = await response.json();
+          if (!response.ok) {
+            throw new Error(result.detail || "Folder upload failed");
+          }
+          setStatus(`Processed ${result.processed_count} of ${result.total_files} files`);
+          await fetchInvoices();
+        } catch (error) {
+          setStatus(`Error: ${error.message}`);
+        }
+      };
+
+      dropZone.addEventListener("click", () => fileInput.click());
+      document.getElementById("uploadFilesBtn").addEventListener("click", () => fileInput.click());
+      document.getElementById("uploadFolderBtn").addEventListener("click", uploadFolder);
+      document.getElementById("refreshBtn").addEventListener("click", fetchInvoices);
+
+      fileInput.addEventListener("change", (event) => uploadFiles(event.target.files));
+
+      dropZone.addEventListener("dragover", (event) => {
+        event.preventDefault();
+        dropZone.classList.add("dragover");
+      });
+
+      dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
+
+      dropZone.addEventListener("drop", (event) => {
+        event.preventDefault();
+        dropZone.classList.remove("dragover");
+        uploadFiles(event.dataTransfer.files);
+      });
+
+      searchInputEl.addEventListener("input", () => updateSelectedInvoice());
+
+      document.getElementById("copyBtn").addEventListener("click", async () => {
+        if (!selectedInvoice) {
+          setStatus("Select an invoice first");
+          return;
+        }
+        try {
+          await navigator.clipboard.writeText(selectedInvoice.extracted_text || "");
+          setStatus("Text copied to clipboard");
+        } catch (error) {
+          setStatus("Copy failed");
+        }
+      });
+
+      fetchInvoices();
+      setInterval(fetchInvoices, 5000);
+    </script>
+  </body>
+</html>

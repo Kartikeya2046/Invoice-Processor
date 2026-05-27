@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+pymongo
+pytesseract
+pillow
+pydantic
+python-dotenv
+pdfplumber
+pdf2image
+python-multipart
