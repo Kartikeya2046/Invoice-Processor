@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="api-base" content="http://localhost:8000" />
     <title>Invoice Processor</title>
     <style>
       :root {
@@ -257,7 +258,7 @@
     <input type="file" id="fileInput" multiple hidden />
 
     <script>
-      const API_BASE = "http://localhost:8000";
+      const API_BASE = document.querySelector('meta[name="api-base"]').content;
 
       const dropZone = document.getElementById("dropZone");
       const fileInput = document.getElementById("fileInput");
