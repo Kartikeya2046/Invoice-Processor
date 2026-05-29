@@ -26,8 +26,8 @@ app.include_router(search.router)
 
 
 @app.get("/health")
-async def health_check():
-	return {"status": "healthy"}
+def health_check():
+	return {"status": "ok"}
 
 
 @app.on_event("startup")
