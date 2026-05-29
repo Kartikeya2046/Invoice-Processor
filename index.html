@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="api-base" content="" />
+    <meta name="api-base" content="https://web-production-d5954.up.railway.app" />
     <title>Invoice Processor</title>
     <style>
       :root {
@@ -261,7 +261,7 @@
       const apiBaseFromQuery = new URLSearchParams(window.location.search).get("api");
       const apiBaseFromStorage = window.localStorage.getItem("API_BASE");
       const apiBaseFromMeta = document.querySelector('meta[name="api-base"]').content;
-      const API_BASE = apiBaseFromQuery || apiBaseFromStorage || apiBaseFromMeta;
+      const API_BASE = apiBaseFromQuery || apiBaseFromStorage || apiBaseFromMeta || "https://web-production-d5954.up.railway.app";
 
       if (!API_BASE) {
         setTimeout(() => {
