@@ -13,44 +13,51 @@ OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gemma3")
 
 
 def build_invoice_prompt(cleaned_text: str) -> str:
-    return f"""You are a document data extraction assistant. Extract structured data from the invoice text below.
+    return f"""You are a commercial document data extraction assistant. 
+The document may be a standard invoice, commercial invoice, proforma invoice, 
+tax invoice, or purchase order. Field labels and layouts vary widely between 
+vendors and countries — use context clues to identify the correct values 
+regardless of the exact label used.
 
 Respond ONLY with a valid JSON object. No explanation. No markdown. No code fences. Just raw JSON.
 
-Extract these fields:
-- invoice_number: string or null
-- invoice_date: string (YYYY-MM-DD format) or null
-- due_date: string (YYYY-MM-DD format) or null
-- vendor_name: string or null
-- vendor_address: string or null
-- vendor_email: string or null
-- vendor_phone: string or null
-- customer_name: string or null
-- customer_address: string or null
-- billing_address: string or null
-- shipping_address: string or null
-- po_number: string or null
-- payment_terms: string or null
-- currency: string (e.g. USD, INR, GBP) or null
-- subtotal: number or null
-- tax_amount: number or null
-- tax_rate: number (percentage) or null
-- discount_amount: number or null
-- grand_total: number or null
-- notes: string or null
-- line_items: array of objects, each with:
-    - description: string
-    - quantity: number
-    - unit_price: number
-    - total_price: number
+Extraction rules for varied formats:
+- vendor_name: look for Seller, Exporter, From, Supplier, Issued By, company letterhead at top
+- vendor_address: address associated with the seller/exporter
+- vendor_email: email of seller/exporter
+- vendor_phone: phone of seller/exporter
+- customer_name: look for Consignee, Buyer, Bill To, Ship To, Sold To, recipient name
+- customer_address: address associated with the buyer/consignee
+- billing_address: explicit billing address if different from customer address
+- shipping_address: explicit shipping/delivery address if present
+- invoice_number: look for Invoice No, INV#, Invoice Number, Reference No, Document No, No., Inv#
+- invoice_date: look for Invoice Date, Date, Issued Date, Document Date
+- due_date: look for Due Date, Payment Due, Pay By
+- po_number: look for PO, PO#, Purchase Order, Order No, Reference
+- payment_terms: look for Terms, Payment Terms, Terms of Payment, Terms of Delivery and Payment
+- currency: infer from symbols or explicit currency codes (USD, INR, GBP, KRW etc.)
+- subtotal: amount before tax/freight, may be labelled Subtotal, Merchandise, Net Amount
+- tax_amount: any tax, GST, VAT, or duty amount
+- tax_rate: tax percentage if shown
+- discount_amount: any discount applied
+- grand_total: look for Grand Total, Total Amount Due, Amount Due, Total USD, Please Pay, 
+  final payable amount — this is the most important field
+- notes: any remarks, special instructions, or comments
+- line_items: extract ALL line items as an array; each item should have:
+    - description: product name, part number, or service description
+    - quantity: numeric quantity ordered or shipped
+    - unit_price: price per unit
+    - total_price: line total (quantity x unit_price)
 
-Rules:
+Additional rules:
 - If a field is not present in the document, use null
 - Never guess or hallucinate values
-- For numbers, return only the numeric value (no currency symbols)
+- For numbers, return only the numeric value (no currency symbols or commas)
 - For dates, convert to YYYY-MM-DD format if possible
+- If the document has multiple PO numbers, put them all comma-separated in po_number
+- For 16+ page invoices with many line items, extract as many line items as you can fit
 
-INVOICE TEXT:
+DOCUMENT TEXT:
 {cleaned_text}"""
 
 
