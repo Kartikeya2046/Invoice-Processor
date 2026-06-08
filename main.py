@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 import database
 from routes import search, upload
+from routes import structured
 
 
 app = FastAPI()
@@ -19,6 +20,7 @@ app.add_middleware(
 
 app.include_router(upload.router)
 app.include_router(search.router)
+app.include_router(structured.router)
 
 
 @app.get("/health")
@@ -29,7 +31,7 @@ def health_check():
 @app.on_event("startup")
 async def startup_event():
 	if database.database is None:
-		raise RuntimeError("MongoDB connection failed during startup")
+		print("MongoDB connection unavailable; starting FastAPI without database access")
 
 
 @app.on_event("shutdown")

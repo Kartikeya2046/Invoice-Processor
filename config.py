@@ -9,7 +9,17 @@ from dotenv import load_dotenv
 
 load_dotenv(dotenv_path=Path(__file__).resolve().parent / ".env")
 
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+def _resolve_mongo_uri(uri_value: str | None) -> str:
+    if not uri_value:
+        return "mongodb://localhost:27017"
+
+    normalized = uri_value.strip()
+    if "<db_password>" in normalized or "<" in normalized or ">" in normalized:
+        return "mongodb://localhost:27017"
+    return normalized
+
+
+MONGO_URI = _resolve_mongo_uri(os.getenv("MONGO_URI"))
 MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "invoice_processor")
 
 

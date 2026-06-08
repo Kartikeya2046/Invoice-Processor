@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, List
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
 from database import invoices_collection
 from models import SearchQuery
@@ -40,14 +40,19 @@ async def search_invoices(payload: SearchQuery):
 
 
 @router.get("/invoices")
-async def list_invoices(limit: int = 50, skip: int = 0):
+async def list_invoices(request: Request, limit: int = 50, skip: int = 0):
 	if limit < 1 or skip < 0:
 		raise HTTPException(status_code=400, detail="Invalid pagination parameters")
 
 	try:
-		total = invoices_collection.count_documents({})
+		status_filter = request.query_params.get("status")
+		query_filter = {}
+		if status_filter:
+			query_filter["processing_status"] = status_filter
+
+		total = invoices_collection.count_documents(query_filter)
 		cursor = (
-			invoices_collection.find()
+			invoices_collection.find(query_filter)
 			.sort("created_at", -1)
 			.skip(skip)
 			.limit(limit)

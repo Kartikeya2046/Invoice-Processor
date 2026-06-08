@@ -9,8 +9,11 @@ from uuid import uuid4
 from fastapi import APIRouter, File, HTTPException, UploadFile
 
 from database import invoices_collection
-from models import InvoiceData
+from llm_extractor import extract_invoice_fields
+from models import InvoiceData, ProcessingStatus, ExtractedInvoiceData, ValidationResult
+from preprocessor import clean_ocr_text, classify_document
 from ocr_processor import process_file
+from validator import validate_extracted_fields
 
 
 router = APIRouter()
@@ -50,10 +53,56 @@ async def upload_file(file: UploadFile = File(...)):
 			"timestamp": datetime.utcnow().isoformat(),
 		}
 
+		# --- New intelligence pipeline ---
+		cleaned_text = clean_ocr_text(extracted_text)
+		doc_classification = classify_document(cleaned_text)
+
+		processing_status = ProcessingStatus.failed
+		extracted_fields = None
+		validation_result = None
+		extraction_error = None
+
+		if doc_classification["type"] == "invoice":
+			try:
+				raw_fields = extract_invoice_fields(cleaned_text)
+				if raw_fields:
+					extracted_fields = ExtractedInvoiceData(**{
+						k: v for k, v in raw_fields.items()
+						if k != "line_items"
+					})
+					line_items_data = raw_fields.get("line_items") or []
+					from models import LineItem
+					extracted_fields.line_items = [
+						LineItem(**item) for item in line_items_data
+						if isinstance(item, dict)
+					]
+					validation_result_dict = validate_extracted_fields(raw_fields)
+					validation_result = ValidationResult(**validation_result_dict)
+					processing_status = (
+						ProcessingStatus.review_required
+						if validation_result.needs_review
+						else ProcessingStatus.extracted
+					)
+				else:
+					extraction_error = "LLM returned empty response"
+					processing_status = ProcessingStatus.failed
+			except Exception as e:
+				extraction_error = str(e)
+				processing_status = ProcessingStatus.failed
+		else:
+			extraction_error = f"Document classified as '{doc_classification['type']}', not an invoice"
+			processing_status = ProcessingStatus.failed
+
 		invoice = InvoiceData(
 			filename=file.filename,
 			extracted_text=extracted_text,
 			metadata=metadata,
+			processing_status=processing_status,
+			document_type=doc_classification["type"],
+			document_type_confidence=doc_classification["confidence"],
+			extracted_fields=extracted_fields,
+			validation_result=validation_result,
+			extraction_error=extraction_error,
 		)
 
 		result = invoices_collection.insert_one(invoice.dict())
@@ -62,6 +111,10 @@ async def upload_file(file: UploadFile = File(...)):
 			"file_id": str(result.inserted_id),
 			"filename": file.filename,
 			"text_length": len(extracted_text),
+			"document_type": doc_classification["type"],
+			"processing_status": processing_status.value,
+			"confidence_score": validation_result.confidence_score if validation_result else None,
+			"needs_review": validation_result.needs_review if validation_result else None,
 		}
 	except HTTPException:
 		raise
