@@ -76,6 +76,7 @@ class InvoiceData(BaseModel):
 	extracted_fields: Optional[ExtractedInvoiceData] = None
 	validation_result: Optional[ValidationResult] = None
 	extraction_error: Optional[str] = None
+	processing_logs: Optional[str] = None
 	correction_history: List[CorrectionRecord] = Field(default_factory=list)
 
 

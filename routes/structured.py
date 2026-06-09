@@ -129,6 +129,7 @@ async def reprocess_invoice(invoice_id: str):
                     "validation_result": new_validation,
                     "processing_status": new_status.value,
                     "extraction_error": None,
+                    "processing_logs": None,
                 },
                 "$push": {
                     "correction_history": {

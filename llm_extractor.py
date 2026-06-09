@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+import re
 from urllib import error as urllib_error
 from urllib import request as urllib_request
 
@@ -82,16 +83,8 @@ def call_ollama(prompt: str) -> str:
         method="POST",
     )
 
-    try:
-        with urllib_request.urlopen(request, timeout=120) as response:
-            response_body = response.read().decode("utf-8")
-    except urllib_error.HTTPError as exc:
-        error_body = exc.read().decode("utf-8", errors="replace") if exc.fp else str(exc)
-        raise RuntimeError(f"Ollama request failed with HTTP {exc.code}: {error_body}") from exc
-    except urllib_error.URLError as exc:
-        raise RuntimeError(f"Failed to reach Ollama at {url}: {exc}") from exc
-    except Exception as exc:
-        raise RuntimeError(f"Unexpected Ollama request failure: {exc}") from exc
+    with urllib_request.urlopen(request, timeout=120) as response:
+        response_body = response.read().decode("utf-8")
 
     try:
         data = json.loads(response_body)
@@ -130,15 +123,58 @@ def parse_llm_response(response_text: str) -> dict | None:
     return None
 
 
-def extract_invoice_fields(cleaned_text: str) -> dict | None:
-    """Full extraction pipeline: prompt -> LLM -> parse."""
+def _truncate_text(text: str, max_len: int = 6000) -> str:
+    """Keep first 3000 and last 3000 chars if text exceeds max_len.
+    Inserts a marker in the middle.
+    """
+    if len(text) <= max_len:
+        return text
+    part = max_len // 2
+    return text[:part] + "\n\n...[middle truncated]...\n\n" + text[-part:]
+
+
+def _clean_llm_response(resp: str) -> str:
+    """Remove markdown fences and extract the JSON block.
+    Handles optional ```json fences.
+    """
+    # Strip surrounding markdown fences
+    cleaned = resp.strip()
+    # Remove leading/trailing ``` or ```json fences
+    cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned, flags=re.MULTILINE)
+    cleaned = re.sub(r"\s*```$", "", cleaned, flags=re.MULTILINE)
+    # Find the first '{' and the last '}'
+    start = cleaned.find('{')
+    end = cleaned.rfind('}')
+    if start != -1 and end != -1 and end > start:
+        return cleaned[start : end + 1]
+    return cleaned
+
+
+def extract_invoice_fields(ocr_text: str) -> dict | None:
+    """Full extraction pipeline: prompt -> LLM -> parse with robust handling."""
+    if len(ocr_text) > 6000:
+        ocr_text = ocr_text[:3000] + "\n\n...[middle truncated]...\n\n" + ocr_text[-3000:]
+
+    prompt = build_invoice_prompt(ocr_text)
     try:
-        prompt = build_invoice_prompt(cleaned_text)
         raw_response = call_ollama(prompt)
-        result = parse_llm_response(raw_response)
-        if result is None:
-            logger.error("LLM returned unparseable response")
+        
+        # Strip markdown fences
+        cleaned_response = re.sub(r"```json|```", "", raw_response)
+        start = cleaned_response.find('{')
+        end = cleaned_response.rfind('}')
+        if start != -1 and end != -1 and end >= start:
+            cleaned_response = cleaned_response[start:end+1]
+
+        result = json.loads(cleaned_response)
         return result
+    except urllib_error.HTTPError as e:
+        raise ConnectionError(f"Ollama HTTP error: {e}") from e
+    except urllib_error.URLError as e:
+        raise ConnectionError(f"Ollama connection error: {e}") from e
+    except json.JSONDecodeError as e:
+        snippet = raw_response[:300] if 'raw_response' in locals() else ''
+        raise ValueError(f"LLM JSON decode error: {e}. Response snippet: {snippet}") from e
     except Exception as e:
         logger.error(f"Extraction failed: {e}")
         raise

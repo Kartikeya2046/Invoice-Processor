@@ -32,8 +32,14 @@ def clean_ocr_text(raw_text: str) -> str:
 
     # Normalize whitespace within lines
     result_lines = []
+    prev_stripped = None
     for line in text.split('\n'):
-        result_lines.append(re.sub(r'[ \t]{2,}', '  ', line))
+        line = re.sub(r'[ \t]{2,}', '  ', line)
+        stripped = line.strip()
+        if stripped and stripped == prev_stripped:
+            continue
+        result_lines.append(line)
+        prev_stripped = stripped if stripped else prev_stripped
     text = '\n'.join(result_lines)
 
     return text.strip()
