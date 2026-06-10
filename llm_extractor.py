@@ -1,4 +1,4 @@
-"""LLM-based structured field extraction via Ollama."""
+"""LLM-based structured field extraction via Groq API."""
 
 import json
 import logging
@@ -9,8 +9,8 @@ from urllib import request as urllib_request
 
 logger = logging.getLogger(__name__)
 
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gemma3")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
 
 
 def build_invoice_prompt(cleaned_text: str) -> str:
@@ -91,47 +91,42 @@ DOCUMENT TEXT:
 {cleaned_text}"""
 
 
-def call_ollama(prompt: str) -> str:
-   
-    """Call Ollama API and return raw response text."""
+def call_groq(prompt: str) -> str:
+    """Call Groq API and return raw response text."""
+    if not GROQ_API_KEY:
+        raise RuntimeError("GROQ_API_KEY environment variable not set")
+
     headers = {
         "Content-Type": "application/json",
-        "ngrok-skip-browser-warning": "true"
-        }
-    url = f"{OLLAMA_BASE_URL}/api/generate"
-    payload = {
-        "model": OLLAMA_MODEL,
-        "prompt": prompt,
-        "stream": False,
-        "options": {
-            "num_ctx": 32768,
-            "num_predict": 4096,
-        },
+        "Authorization": f"Bearer {GROQ_API_KEY}"
     }
 
-    request = urllib_request.Request(
-        url,
+    payload = {
+        "model": GROQ_MODEL,
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0.0,
+        "max_tokens": 4096,
+    }
+
+    req = urllib_request.Request(
+        "https://api.groq.com/openai/v1/chat/completions",
         data=json.dumps(payload).encode("utf-8"),
         headers=headers,
         method="POST",
     )
 
-    with urllib_request.urlopen(request, timeout=300) as response:
-        response_body = response.read().decode("utf-8")
+    with urllib_request.urlopen(req, timeout=60) as response:
+        body = response.read().decode("utf-8")
 
     try:
-        data = json.loads(response_body)
+        data = json.loads(body)
     except json.JSONDecodeError as exc:
-        raise RuntimeError(f"Ollama returned an invalid JSON response: {exc}") from exc
+        raise RuntimeError(f"Groq returned invalid JSON: {exc}") from exc
 
-    if not isinstance(data, dict) or "response" not in data:
-        raise RuntimeError("Ollama returned an invalid response payload: missing 'response' field")
+    if "choices" not in data or not data["choices"]:
+        raise RuntimeError(f"Groq response missing choices: {data}")
 
-    response_text = data["response"]
-    if not isinstance(response_text, str):
-        raise RuntimeError("Ollama returned an invalid response payload: 'response' is not a string")
-
-    return response_text
+    return data["choices"][0]["message"]["content"]
 
 
 def parse_llm_response(response_text: str) -> dict | None:
@@ -156,49 +151,39 @@ def parse_llm_response(response_text: str) -> dict | None:
     return None
 
 
-
-
-
 def _clean_llm_response(resp: str) -> str:
-    """Remove markdown fences and extract the JSON block.
-    Handles optional ```json fences.
-    """
-    # Strip surrounding markdown fences
+    """Remove markdown fences and extract the JSON block."""
     cleaned = resp.strip()
-    # Remove leading/trailing ``` or ```json fences
     cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned, flags=re.MULTILINE)
     cleaned = re.sub(r"\s*```$", "", cleaned, flags=re.MULTILINE)
-    # Find the first '{' and the last '}'
     start = cleaned.find('{')
     end = cleaned.rfind('}')
     if start != -1 and end != -1 and end > start:
-        return cleaned[start : end + 1]
+        return cleaned[start:end + 1]
     return cleaned
 
 
 def extract_invoice_fields(ocr_text: str) -> dict | None:
-    """Full extraction pipeline: prompt -> LLM -> parse with robust handling."""
-
+    """Full extraction pipeline: prompt -> Groq -> parse."""
     prompt = build_invoice_prompt(ocr_text)
     try:
-        raw_response = call_ollama(prompt)
-        
-        # Strip markdown fences
+        raw_response = call_groq(prompt)
+
         cleaned_response = re.sub(r"```json|```", "", raw_response)
         start = cleaned_response.find('{')
         end = cleaned_response.rfind('}')
         if start != -1 and end != -1 and end >= start:
-            cleaned_response = cleaned_response[start:end+1]
+            cleaned_response = cleaned_response[start:end + 1]
 
         result = json.loads(cleaned_response)
         return result
     except urllib_error.HTTPError as e:
-        raise ConnectionError(f"Ollama HTTP error: {e}") from e
+        raise ConnectionError(f"Groq HTTP error: {e}") from e
     except urllib_error.URLError as e:
-        raise ConnectionError(f"Ollama connection error: {e}") from e
+        raise ConnectionError(f"Groq connection error: {e}") from e
     except json.JSONDecodeError as e:
         snippet = raw_response[:300] if 'raw_response' in locals() else ''
-        raise ValueError(f"LLM JSON decode error: {e}. Response snippet: {snippet}") from e
+        raise ValueError(f"LLM JSON decode error: {e}. Snippet: {snippet}") from e
     except Exception as e:
         logger.error(f"Extraction failed: {e}")
         raise
