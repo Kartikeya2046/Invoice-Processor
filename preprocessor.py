@@ -1,6 +1,7 @@
 """OCR text preprocessing and document classification."""
 
 import re
+import pdfplumber
 
 
 def clean_ocr_text(raw_text: str) -> str:
@@ -107,3 +108,41 @@ def classify_document(cleaned_text: str) -> dict:
         'confidence': round(confidence, 2),
         'matched_keywords': best_score
     }
+
+
+def extract_pages_pdfplumber(pdf_path: str) -> list[str]:
+    """Extract per-page text from a native PDF using pdfplumber."""
+    pages = []
+    with pdfplumber.open(pdf_path) as pdf:
+        for page in pdf.pages:
+            text = page.extract_text()
+            if text and text.strip():
+                pages.append(text)
+    return pages
+
+
+def deduplicate_pages(pages: list[str]) -> str:
+    """
+    Keep page 1 fully intact.
+    For pages 2+, strip lines that are identical to lines in page 1 (boilerplate).
+    Join with PAGE BREAK markers.
+    """
+    if not pages:
+        return ""
+    if len(pages) == 1:
+        return pages[0]
+
+    page1_lines = set(
+        line.strip() for line in pages[0].splitlines() if line.strip()
+    )
+
+    result = [pages[0]]
+    for page in pages[1:]:
+        unique_lines = [
+            line for line in page.splitlines()
+            if line.strip() and line.strip() not in page1_lines
+        ]
+        if unique_lines:
+            result.append("\n".join(unique_lines))
+
+    return "\n\n--- PAGE BREAK ---\n\n".join(result)

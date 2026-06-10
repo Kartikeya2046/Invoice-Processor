@@ -11,7 +11,7 @@ from fastapi import APIRouter, File, HTTPException, UploadFile
 from database import invoices_collection
 from llm_extractor import extract_invoice_fields
 from models import InvoiceData, ProcessingStatus, ExtractedInvoiceData, ValidationResult
-from preprocessor import clean_ocr_text, classify_document
+from preprocessor import clean_ocr_text, classify_document, extract_pages_pdfplumber, deduplicate_pages
 from ocr_processor import process_file
 from validator import validate_extracted_fields
 
@@ -46,6 +46,7 @@ async def upload_file(file: UploadFile = File(...)):
 			buffer.write(content)
 		file_size = temp_path.stat().st_size
 		extracted_text = process_file(str(temp_path))
+		pdf_pages = extract_pages_pdfplumber(str(temp_path)) if file_extension == ".pdf" else None
 	except Exception as error:
 		raise HTTPException(status_code=500, detail=f"Upload failed: {error}")
 	finally:
@@ -64,8 +65,12 @@ async def upload_file(file: UploadFile = File(...)):
 	}
 
 	# --- New intelligence pipeline ---
-	cleaned_text = clean_ocr_text(extracted_text)
-	doc_classification = classify_document(cleaned_text)
+	if file_extension == ".pdf" and pdf_pages:
+		text_for_llm = deduplicate_pages(pdf_pages)
+	else:
+		text_for_llm = clean_ocr_text(extracted_text)
+
+	doc_classification = classify_document(text_for_llm)
 
 	processing_status = ProcessingStatus.failed
 	extracted_fields = None
@@ -75,7 +80,7 @@ async def upload_file(file: UploadFile = File(...)):
 
 	if doc_classification["type"] == "invoice":
 		try:
-			raw_fields = extract_invoice_fields(cleaned_text)
+			raw_fields = extract_invoice_fields(text_for_llm)
 			if raw_fields:
 				extracted_fields = ExtractedInvoiceData(**{k: v for k, v in raw_fields.items() if k != "line_items"})
 				line_items_data = raw_fields.get("line_items") or []
