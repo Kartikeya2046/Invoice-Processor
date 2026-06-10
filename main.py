@@ -23,6 +23,7 @@ app.add_middleware(
 
 app.include_router(upload.router)
 app.include_router(search.router)
+from routes import structured
 app.include_router(structured.router)
 
 
@@ -33,6 +34,9 @@ def health_check():
 
 @app.on_event("startup")
 async def startup_event():
+	import os
+	groq_key = os.getenv("GROQ_API_KEY", "NOT SET")
+	print(f"GROQ_API_KEY status: {'SET ('+groq_key[:8]+'...)' if groq_key != 'NOT SET' else 'NOT SET - extraction will fail'}")
 	if database.database is None:
 		print("MongoDB connection unavailable; starting FastAPI without database access")
 

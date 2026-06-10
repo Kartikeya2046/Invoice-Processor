@@ -122,20 +122,12 @@ def extract_pages_pdfplumber(pdf_path: str) -> list[str]:
 
 
 def deduplicate_pages(pages: list[str]) -> str:
-    """
-    Keep page 1 fully intact.
-    For pages 2+, strip lines that are identical to lines in page 1 (boilerplate).
-    Join with PAGE BREAK markers.
-    """
+    """Keep page 1 fully intact. Strip repeated boilerplate from pages 2+."""
     if not pages:
         return ""
     if len(pages) == 1:
         return pages[0]
-
-    page1_lines = set(
-        line.strip() for line in pages[0].splitlines() if line.strip()
-    )
-
+    page1_lines = set(line.strip() for line in pages[0].splitlines() if line.strip())
     result = [pages[0]]
     for page in pages[1:]:
         unique_lines = [
@@ -144,5 +136,4 @@ def deduplicate_pages(pages: list[str]) -> str:
         ]
         if unique_lines:
             result.append("\n".join(unique_lines))
-
     return "\n\n--- PAGE BREAK ---\n\n".join(result)

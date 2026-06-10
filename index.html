@@ -571,11 +571,8 @@
     <input type="file" id="fileInput" multiple hidden />
 
     <script>
-      const apiBaseFromQuery = new URLSearchParams(window.location.search).get("api");
-      const apiBaseFromStorage = window.localStorage.getItem("API_BASE");
-      const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.hostname === "[::1]";
-      const defaultApi = isLocal ? "http://127.0.0.1:8000" : (document.querySelector('meta[name="api-base"]')?.content || "https://web-production-d5954.up.railway.app");
-      const API_BASE = apiBaseFromQuery || apiBaseFromStorage || defaultApi;
+      // UPDATE THIS TO YOUR BACKEND DEPLOYMENT URL
+      const API_BASE = "https://your-railway-url.up.railway.app";
 
       if (!API_BASE) {
         setTimeout(() => {

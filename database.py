@@ -21,6 +21,7 @@ def _initialize_database() -> None:
 		invoices_collection = database["invoices"]
 		invoices_collection.create_index("extracted_text", name="extracted_text_text_index")
 		invoices_collection.create_index("processing_status", name="processing_status_index")
+		invoices_collection.create_index("created_at", name="created_at_index")
 		invoices_collection.create_index("extracted_fields.vendor_name", name="vendor_name_index")
 		invoices_collection.create_index("extracted_fields.invoice_date", name="invoice_date_index")
 		invoices_collection.create_index("extracted_fields.grand_total", name="grand_total_index")

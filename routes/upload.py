@@ -1,194 +1,151 @@
-"""Upload endpoints for invoice files."""
-
 import os
-from datetime import datetime
+import uuid
 from pathlib import Path
-from typing import List
-from uuid import uuid4
+from fastapi import APIRouter, UploadFile, File, HTTPException
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
-
-from database import invoices_collection
+from models import (
+    InvoiceData,
+    ExtractedInvoiceData,
+    LineItem,
+    ValidationResult,
+    ProcessingStatus
+)
 from llm_extractor import extract_invoice_fields
-from models import InvoiceData, ProcessingStatus, ExtractedInvoiceData, ValidationResult
-from preprocessor import clean_ocr_text, classify_document, extract_pages_pdfplumber, deduplicate_pages
+from preprocessor import (
+    clean_ocr_text,
+    classify_document,
+    extract_pages_pdfplumber,
+    deduplicate_pages
+)
 from ocr_processor import process_file
-from validator import validate_extracted_fields
-
+from database import invoices_collection
 
 router = APIRouter()
 
-UPLOADS_DIR = Path(__file__).resolve().parent.parent / "uploads"
-SUPPORTED_EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff"}
-
-
-def _is_supported_file(file_name: str) -> bool:
-	return Path(file_name).suffix.lower() in SUPPORTED_EXTENSIONS
-
+ALLOWED_EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff"}
+UPLOADS_DIR = Path("uploads")
+UPLOADS_DIR.mkdir(exist_ok=True)
 
 @router.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
-	if not file.filename:
-		raise HTTPException(status_code=400, detail="No file name provided")
+    ext = Path(file.filename).suffix.lower()
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="Invalid file extension")
 
-	if not _is_supported_file(file.filename):
-		raise HTTPException(status_code=400, detail="Unsupported file type")
+    temp_id = str(uuid.uuid4())
+    temp_path = UPLOADS_DIR / f"{temp_id}{ext}"
 
-	UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
-	file_extension = Path(file.filename).suffix.lower()
-	temp_name = f"{uuid4().hex}{file_extension}"
-	temp_path = UPLOADS_DIR / temp_name
+    with open(temp_path, "wb") as f:
+        f.write(await file.read())
 
-	file_size = 0
-	try:
-		with temp_path.open("wb") as buffer:
-			content = await file.read()
-			buffer.write(content)
-		file_size = temp_path.stat().st_size
-		extracted_text = process_file(str(temp_path))
-		pdf_pages = extract_pages_pdfplumber(str(temp_path)) if file_extension == ".pdf" else None
-	except Exception as error:
-		raise HTTPException(status_code=500, detail=f"Upload failed: {error}")
-	finally:
-		try:
-			if temp_path.exists():
-				temp_path.unlink()
-		except OSError:
-			pass
+    raw_text = ""
+    text_for_llm = ""
+    processing_status = ProcessingStatus.pending
+    extracted_fields = None
+    validation_result = None
+    extraction_error = None
+    doc_type = None
+    doc_confidence = None
 
-	if extracted_text.startswith("Error") or extracted_text.startswith("Unsupported"):
-		raise HTTPException(status_code=400, detail=extracted_text)
+    try:
+        raw_text = process_file(str(temp_path))
+        
+        pages = []
+        if ext == ".pdf":
+            try:
+                pages = extract_pages_pdfplumber(str(temp_path))
+            except Exception as e:
+                pass # Fallback to raw_text
+                
+        if ext == ".pdf" and pages:
+            text_for_llm = deduplicate_pages(pages)
+        else:
+            text_for_llm = clean_ocr_text(raw_text)
 
-	metadata = {
-		"file_size": file_size,
-		"timestamp": datetime.utcnow().isoformat(),
-	}
+        classification = classify_document(text_for_llm)
+        doc_type = classification.get("type")
+        doc_confidence = classification.get("confidence")
 
-	# --- New intelligence pipeline ---
-	if file_extension == ".pdf" and pdf_pages:
-		text_for_llm = deduplicate_pages(pdf_pages)
-	else:
-		text_for_llm = clean_ocr_text(extracted_text)
+        if doc_type != "invoice":
+            processing_status = ProcessingStatus.failed
+            extraction_error = "Document is not classified as an invoice"
+        else:
+            try:
+                extracted_dict = extract_invoice_fields(text_for_llm)
+                if extracted_dict:
+                    line_items_data = extracted_dict.pop("line_items", [])
+                    line_items = []
+                    for item in line_items_data:
+                        line_items.append(LineItem(**item))
+                    
+                    extracted_fields = ExtractedInvoiceData(**extracted_dict, line_items=line_items)
+                    
+                    # Validation
+                    required_fields = ["invoice_number", "vendor_name", "grand_total"]
+                    missing_fields = []
+                    non_null_count = 0
+                    
+                    # Exclude line_items from the 20 fields count
+                    fields_to_check = [
+                        "invoice_number", "invoice_date", "due_date", "vendor_name", 
+                        "vendor_address", "vendor_email", "vendor_phone", "customer_name", 
+                        "customer_address", "billing_address", "shipping_address", 
+                        "po_number", "payment_terms", "currency", "subtotal", 
+                        "tax_amount", "tax_rate", "discount_amount", "shipping_amount", "grand_total"
+                    ]
+                    
+                    for field in fields_to_check:
+                        val = getattr(extracted_fields, field, None)
+                        if val is not None and val != "":
+                            non_null_count += 1
+                        else:
+                            if field in required_fields:
+                                missing_fields.append(field)
+                                
+                    confidence_score = non_null_count / 20.0
+                    needs_review = confidence_score < 0.70 or len(missing_fields) > 0
+                    
+                    validation_result = ValidationResult(
+                        confidence_score=confidence_score,
+                        needs_review=needs_review,
+                        missing_fields=missing_fields,
+                        issues=["Missing required fields"] if missing_fields else []
+                    )
+                    
+                    if not needs_review:
+                        processing_status = ProcessingStatus.extracted
+                    else:
+                        processing_status = ProcessingStatus.review_required
+                else:
+                    processing_status = ProcessingStatus.failed
+                    extraction_error = "Failed to parse extraction results"
+            except Exception as e:
+                processing_status = ProcessingStatus.failed
+                extraction_error = str(e)
 
-	doc_classification = classify_document(text_for_llm)
+    finally:
+        if temp_path.exists():
+            temp_path.unlink()
 
-	processing_status = ProcessingStatus.failed
-	extracted_fields = None
-	validation_result = None
-	extraction_error = None
-	processing_logs = None
+    invoice = InvoiceData(
+        filename=file.filename,
+        extracted_text=text_for_llm if text_for_llm else raw_text,
+        processing_status=processing_status,
+        document_type=doc_type,
+        document_type_confidence=doc_confidence,
+        extracted_fields=extracted_fields,
+        validation_result=validation_result,
+        extraction_error=extraction_error,
+        correction_history=[]
+    )
 
-	if doc_classification["type"] == "invoice":
-		try:
-			raw_fields = extract_invoice_fields(text_for_llm)
-			if raw_fields:
-				extracted_fields = ExtractedInvoiceData(**{k: v for k, v in raw_fields.items() if k != "line_items"})
-				line_items_data = raw_fields.get("line_items") or []
-				from models import LineItem
-				extracted_fields.line_items = [LineItem(**item) for item in line_items_data if isinstance(item, dict)]
-				validation_result_dict = validate_extracted_fields(raw_fields)
-				validation_result = ValidationResult(**validation_result_dict)
-				processing_status = (
-					ProcessingStatus.review_required if validation_result.needs_review else ProcessingStatus.extracted
-				)
-			else:
-				extraction_error = "LLM returned empty response"
-				processing_status = ProcessingStatus.failed
-		except ConnectionError as e:
-			processing_logs = f"Connection error: {e}"
-			extraction_error = f"Connection error: {e}"
-			processing_status = ProcessingStatus.failed
-		except ValueError as e:
-			processing_logs = f"Parsing error: {e}"
-			extraction_error = f"Parsing error: {e}"
-			processing_status = ProcessingStatus.failed
-		except Exception as e:
-			processing_logs = f"Extraction error: {str(e)}"
-			extraction_error = f"Extraction error: {str(e)}"
-			processing_status = ProcessingStatus.failed
-	else:
-		extraction_error = f"Document classified as '{doc_classification['type']}', not an invoice"
-		processing_status = ProcessingStatus.failed
+    doc = invoice.model_dump()
+    result = invoices_collection.insert_one(doc)
 
-	invoice = InvoiceData(
-		filename=file.filename,
-		extracted_text=extracted_text,
-		metadata=metadata,
-		processing_status=processing_status,
-		document_type=doc_classification["type"],
-		document_type_confidence=doc_classification["confidence"],
-		extracted_fields=extracted_fields,
-		validation_result=validation_result,
-		extraction_error=extraction_error,
-		processing_logs=processing_logs,
-	)
-
-	result = invoices_collection.insert_one(invoice.dict())
-	return {
-		"message": "File processed successfully",
-		"file_id": str(result.inserted_id),
-		"filename": file.filename,
-		"text_length": len(extracted_text),
-		"document_type": doc_classification["type"],
-		"processing_status": processing_status.value,
-		"confidence_score": validation_result.confidence_score if validation_result else None,
-		"needs_review": validation_result.needs_review if validation_result else None,
-	}
-
-
-@router.post("/upload-folder/{folder_path:path}")
-async def upload_folder(folder_path: str):
-	if not os.path.isdir(folder_path):
-		raise HTTPException(status_code=400, detail="Folder path does not exist")
-
-	files: List[Path] = [
-		Path(folder_path) / name
-		for name in os.listdir(folder_path)
-		if _is_supported_file(name)
-	]
-
-	results = []
-	processed_count = 0
-
-	for file_path in files:
-		try:
-			extracted_text = process_file(str(file_path))
-			if extracted_text.startswith("Error") or extracted_text.startswith("Unsupported"):
-				raise ValueError(extracted_text)
-
-			metadata = {
-				"file_size": file_path.stat().st_size,
-				"timestamp": datetime.utcnow().isoformat(),
-			}
-
-			invoice = InvoiceData(
-				filename=file_path.name,
-				extracted_text=extracted_text,
-				metadata=metadata,
-			)
-
-			result = invoices_collection.insert_one(invoice.dict())
-			processed_count += 1
-			results.append(
-				{
-					"filename": file_path.name,
-					"status": "success",
-					"file_id": str(result.inserted_id),
-				}
-			)
-		except Exception as error:
-			results.append(
-				{
-					"filename": file_path.name,
-					"status": "error",
-					"file_id": None,
-					"message": str(error),
-				}
-			)
-
-	return {
-		"total_files": len(files),
-		"processed_count": processed_count,
-		"results": results,
-	}
-
+    return {
+        "file_id": str(result.inserted_id),
+        "filename": invoice.filename,
+        "processing_status": invoice.processing_status,
+        "confidence_score": validation_result.confidence_score if validation_result else 0.0,
+        "needs_review": validation_result.needs_review if validation_result else True
+    }
