@@ -7,7 +7,8 @@ import database
 from routes import search, upload
 from routes import structured
 
-
+import os
+print("GROQ_API_KEY loaded:", os.getenv("GROQ_API_KEY", "NOT SET")[:15])
 
 app = FastAPI()
 
