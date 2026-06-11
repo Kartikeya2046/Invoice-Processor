@@ -5,45 +5,6 @@ from database import invoices_collection
 
 router = APIRouter()
 
-@router.get("/invoices")
-def get_invoices():
-    cursor = invoices_collection.find().sort("created_at", -1).limit(50)
-    invoices = []
-    for doc in cursor:
-        extracted = doc.get("extracted_fields") or {}
-        validation = doc.get("validation_result") or {}
-        invoices.append({
-            "id": str(doc["_id"]),
-            "_id": str(doc["_id"]),
-            "filename": doc.get("filename"),
-            "processing_status": doc.get("processing_status"),
-            "confidence_score": validation.get("confidence_score", 0.0),
-            "created_at": doc.get("created_at"),
-            "invoice_number": extracted.get("invoice_number"),
-            "vendor_name": extracted.get("vendor_name"),
-            "grand_total": extracted.get("grand_total")
-        })
-    return {"invoices": invoices}
-
-@router.get("/invoices/queue/review")
-def get_review_queue():
-    cursor = invoices_collection.find({"processing_status": "review_required"}).sort("created_at", -1).limit(50)
-    invoices = []
-    for doc in cursor:
-        extracted = doc.get("extracted_fields") or {}
-        validation = doc.get("validation_result") or {}
-        invoices.append({
-            "id": str(doc["_id"]),
-            "_id": str(doc["_id"]),
-            "filename": doc.get("filename"),
-            "processing_status": doc.get("processing_status"),
-            "confidence_score": validation.get("confidence_score", 0.0),
-            "created_at": doc.get("created_at"),
-            "invoice_number": extracted.get("invoice_number"),
-            "vendor_name": extracted.get("vendor_name"),
-            "grand_total": extracted.get("grand_total")
-        })
-    return {"invoices": invoices}
 
 @router.get("/invoices/{invoice_id}")
 def get_invoice(invoice_id: str):

@@ -19,6 +19,7 @@ from preprocessor import (
 )
 from ocr_processor import process_file
 from database import invoices_collection
+from validator import validate_extracted_fields
 
 router = APIRouter()
 
@@ -67,61 +68,48 @@ async def upload_file(file: UploadFile = File(...)):
         doc_confidence = classification.get("confidence")
 
         if doc_type != "invoice":
-            processing_status = ProcessingStatus.failed
-            extraction_error = "Document is not classified as an invoice"
-        else:
-            try:
-                extracted_dict = extract_invoice_fields(text_for_llm)
-                if extracted_dict:
-                    line_items_data = extracted_dict.pop("line_items", [])
-                    line_items = []
-                    for item in line_items_data:
-                        line_items.append(LineItem(**item))
-                    
-                    extracted_fields = ExtractedInvoiceData(**extracted_dict, line_items=line_items)
-                    
-                    # Validation
-                    required_fields = ["invoice_number", "vendor_name", "grand_total"]
-                    missing_fields = []
-                    non_null_count = 0
-                    
-                    # Exclude line_items from the 20 fields count
-                    fields_to_check = [
-                        "invoice_number", "invoice_date", "due_date", "vendor_name", 
-                        "vendor_address", "vendor_email", "vendor_phone", "customer_name", 
-                        "customer_address", "billing_address", "shipping_address", 
-                        "po_number", "payment_terms", "currency", "subtotal", 
-                        "tax_amount", "tax_rate", "discount_amount", "shipping_amount", "grand_total"
-                    ]
-                    
-                    for field in fields_to_check:
-                        val = getattr(extracted_fields, field, None)
-                        if val is not None and val != "":
-                            non_null_count += 1
-                        else:
-                            if field in required_fields:
-                                missing_fields.append(field)
-                                
-                    confidence_score = non_null_count / 20.0
-                    needs_review = confidence_score < 0.70 or len(missing_fields) > 0
-                    
-                    validation_result = ValidationResult(
-                        confidence_score=confidence_score,
-                        needs_review=needs_review,
-                        missing_fields=missing_fields,
-                        issues=["Missing required fields"] if missing_fields else []
-                    )
-                    
-                    if not needs_review:
-                        processing_status = ProcessingStatus.extracted
-                    else:
-                        processing_status = ProcessingStatus.review_required
+            extraction_error = f"Classifier flagged as '{doc_type}' (confidence {doc_confidence}) — attempting extraction anyway"
+
+        try:
+            extracted_dict = extract_invoice_fields(text_for_llm)
+            if extracted_dict:
+                line_items_data = extracted_dict.pop("line_items", [])
+                line_items = []
+                ALLOWED_LINE_ITEM_KEYS = {
+                    "line_number", "part_number", "manufacturer_part_number",
+                    "description", "quantity", "unit_price", "total_price"
+                }
+                for item in line_items_data:
+                    if not isinstance(item, dict):
+                        continue
+                    filtered = {k: v for k, v in item.items() if k in ALLOWED_LINE_ITEM_KEYS}
+                    try:
+                        line_items.append(LineItem(**filtered))
+                    except Exception:
+                        continue
+                
+                extracted_fields = ExtractedInvoiceData(**extracted_dict, line_items=line_items)
+                
+                extracted_dict_for_validation = extracted_fields.model_dump()
+                validation_dict = validate_extracted_fields(extracted_dict_for_validation)
+                
+                validation_result = ValidationResult(
+                    confidence_score=validation_dict["confidence_score"],
+                    needs_review=validation_dict["needs_review"],
+                    missing_fields=validation_dict["missing_fields"],
+                    issues=validation_dict["failed_checks"]
+                )
+                
+                if not validation_dict["needs_review"]:
+                    processing_status = ProcessingStatus.extracted
                 else:
-                    processing_status = ProcessingStatus.failed
-                    extraction_error = "Failed to parse extraction results"
-            except Exception as e:
+                    processing_status = ProcessingStatus.review_required
+            else:
                 processing_status = ProcessingStatus.failed
-                extraction_error = str(e)
+                extraction_error = "Failed to parse extraction results"
+        except Exception as e:
+            processing_status = ProcessingStatus.failed
+            extraction_error = str(e)
 
     finally:
         if temp_path.exists():

@@ -39,6 +39,18 @@ async def search_invoices(payload: SearchQuery):
 		raise HTTPException(status_code=500, detail=f"Search failed: {error}")
 
 
+@router.get("/invoices/queue/review")
+async def get_review_queue():
+	try:
+		cursor = invoices_collection.find(
+			{"processing_status": "review_required"}
+		).sort("created_at", -1).limit(50)
+		invoices = [_serialize_invoice(doc) for doc in cursor]
+		return {"invoices": invoices}
+	except Exception as error:
+		raise HTTPException(status_code=500, detail=f"Failed to fetch review queue: {error}")
+
+
 @router.get("/invoices")
 async def list_invoices(request: Request, limit: int = 50, skip: int = 0):
 	if limit < 1 or skip < 0:
@@ -68,7 +80,5 @@ async def list_invoices(request: Request, limit: int = 50, skip: int = 0):
 		raise HTTPException(status_code=500, detail=f"Failed to list invoices: {error}")
 
 
-@router.get("/health")
-async def health_check():
-	return {"status": "healthy"}
+
 

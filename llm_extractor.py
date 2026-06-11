@@ -16,9 +16,24 @@ GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 def build_invoice_prompt(cleaned_text: str) -> str:
     return f"""You are a commercial document data extraction assistant.
 The document may be a standard invoice, commercial invoice, proforma invoice,
-tax invoice, or purchase order. Field labels and layouts vary widely between
-vendors and countries — use context clues to identify the correct values
-regardless of the exact label used.
+tax invoice, or purchase order.
+
+CRITICAL: Field labels vary enormously across vendors, countries, and document layouts.
+You MUST scan the entire document for any label that could reasonably refer to a field —
+do NOT skip a field just because its label does not exactly match the examples below.
+Common variations to watch for:
+- Invoice number: "Invoice No", "Inv No", "Inv #", "INV", "Invoice #", "Document No", "Doc No", "Bill No", "Ref No", "Reference"
+- Invoice date: "Invoice Date", "Date", "Dt", "Dated", "Issue Date", "Billing Date", "Tax Invoice Date"
+- Due date: "Due Date", "Payment Due", "Pay By", "Due On", "Net Due Date", "Expiry"
+- Vendor: "Seller", "Supplier", "From", "Issued By", "Exporter", "Billed From", company letterhead at top of document
+- Customer: "Bill To", "Sold To", "Buyer", "Consignee", "Client", "Ship To" (if no separate billing)
+- PO number: "PO", "PO#", "Purchase Order", "Order No", "Order #", "Cust PO", "Your Order"
+- Grand total: "Total Due", "Amount Due", "Total Payable", "Balance Due", "Please Pay", "Net Payable", "Invoice Total"
+- Subtotal: "Sub Total", "Net Amount", "Taxable Amount", "Amount Before Tax"
+- Tax: "GST", "VAT", "HST", "Tax", "CGST", "SGST", "IGST", "Service Tax"
+- Payment terms: "Terms", "Net 30", "Due on Receipt", "Payment Terms", "Credit Period"
+
+If a value is present in the document but under an unlisted label, use context and position to identify it and extract it anyway. Missing field = null, never guess.
 
 Respond ONLY with a valid JSON object. No explanation. No markdown. No code fences. Just raw JSON.
 
@@ -79,43 +94,57 @@ DOCUMENT TEXT:
 
 
 def call_gemini(prompt: str) -> str:
-    """Call Gemini API and return raw response text."""
+    """Call Gemini API and return raw response text. Retries on 429."""
+    import time
+
     if not GEMINI_API_KEY:
         raise RuntimeError("GEMINI_API_KEY environment variable not set")
 
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={GEMINI_API_KEY}"
 
     payload = {
-        "contents": [
-            {
-                "parts": [{"text": prompt}]
-            }
-        ],
+        "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
             "temperature": 0.0,
             "maxOutputTokens": 8192,
         }
     }
 
-    req = urllib_request.Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
+    MAX_RETRIES = 3
+    RETRY_DELAYS = [15, 30, 60]  # seconds between retries
 
-    with urllib_request.urlopen(req, timeout=60) as response:
-        body = response.read().decode("utf-8")
+    last_error = None
+    for attempt in range(MAX_RETRIES):
+        try:
+            req = urllib_request.Request(
+                url,
+                data=json.dumps(payload).encode("utf-8"),
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with urllib_request.urlopen(req, timeout=60) as response:
+                body = response.read().decode("utf-8")
 
-    try:
-        data = json.loads(body)
-    except json.JSONDecodeError as exc:
-        raise RuntimeError(f"Gemini returned invalid JSON: {exc}") from exc
+            try:
+                data = json.loads(body)
+            except json.JSONDecodeError as exc:
+                raise RuntimeError(f"Gemini returned invalid JSON: {exc}") from exc
 
-    try:
-        return data["candidates"][0]["content"]["parts"][0]["text"]
-    except (KeyError, IndexError) as exc:
-        raise RuntimeError(f"Gemini response missing expected fields: {data}") from exc
+            try:
+                return data["candidates"][0]["content"]["parts"][0]["text"]
+            except (KeyError, IndexError) as exc:
+                raise RuntimeError(f"Gemini response missing expected fields: {data}") from exc
+
+        except urllib_error.HTTPError as e:
+            if e.code == 429 and attempt < MAX_RETRIES - 1:
+                wait = RETRY_DELAYS[attempt]
+                logger.warning(f"Gemini 429 rate limit hit, retrying in {wait}s (attempt {attempt + 1}/{MAX_RETRIES})")
+                time.sleep(wait)
+                last_error = e
+                continue
+            raise ConnectionError(f"Gemini HTTP error: {e}") from e
+
+    raise ConnectionError(f"Gemini rate limit exceeded after {MAX_RETRIES} attempts: {last_error}")
 
 
 def parse_llm_response(response_text: str) -> dict | None:

@@ -283,257 +283,6 @@
       border-color: #2563eb;
     }
 
-    /* Tab bar */
-    .tab-bar {
-      display: flex;
-      gap: 4px;
-      margin-top: 16px;
-      border-bottom: 2px solid #e2e8f0;
-      padding-bottom: 0;
-    }
-
-    .tab-btn {
-      background: none;
-      border: none;
-      padding: 8px 16px;
-      font-size: 14px;
-      font-weight: 600;
-      color: #94a3b8;
-      cursor: pointer;
-      border-bottom: 2px solid transparent;
-      margin-bottom: -2px;
-      border-radius: 0;
-      transform: none;
-    }
-
-    .tab-btn:hover {
-      background: none;
-      color: #2563eb;
-      transform: none;
-    }
-
-    .tab-btn.active {
-      color: #2563eb;
-      border-bottom-color: #2563eb;
-      background: none;
-    }
-
-    .tab-content {
-      display: none;
-    }
-
-    .tab-content.active {
-      display: block;
-    }
-
-    /* Confidence badge */
-    .confidence-badge {
-      display: inline-block;
-      padding: 4px 12px;
-      border-radius: 999px;
-      font-size: 13px;
-      font-weight: 700;
-      margin-bottom: 12px;
-    }
-
-    .badge-green {
-      background: #dcfce7;
-      color: #15803d;
-    }
-
-    .badge-amber {
-      background: #fef9c3;
-      color: #b45309;
-    }
-
-    .badge-red {
-      background: #fee2e2;
-      color: #b91c1c;
-    }
-
-    /* Missing fields warning */
-    .missing-warning {
-      background: #fff7ed;
-      border: 1px solid #fdba74;
-      border-radius: 10px;
-      padding: 10px 14px;
-      font-size: 13px;
-      color: #c2410c;
-      margin-bottom: 12px;
-    }
-
-    /* Fields grid */
-    .fields-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px 16px;
-      margin-bottom: 20px;
-    }
-
-    .field-row {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      padding: 8px;
-      border-radius: 8px;
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      position: relative;
-    }
-
-    .field-label {
-      font-size: 11px;
-      font-weight: 600;
-      color: #94a3b8;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-
-    .field-value {
-      font-size: 13px;
-      color: #0f172a;
-      word-break: break-word;
-    }
-
-    .field-value.null-value {
-      color: #94a3b8;
-      font-style: italic;
-    }
-
-    .edit-btn {
-      position: absolute;
-      top: 6px;
-      right: 6px;
-      background: none;
-      border: none;
-      color: #94a3b8;
-      cursor: pointer;
-      font-size: 12px;
-      padding: 2px 4px;
-      border-radius: 4px;
-      transform: none;
-      min-width: unset;
-    }
-
-    .edit-btn:hover {
-      background: #e2e8f0;
-      color: #2563eb;
-      transform: none;
-    }
-
-    .inline-edit {
-      display: flex;
-      gap: 4px;
-      margin-top: 4px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .inline-edit input {
-      flex: 1;
-      padding: 4px 8px;
-      border: 1px solid #2563eb;
-      border-radius: 6px;
-      font-size: 13px;
-      min-width: 0;
-    }
-
-    .save-btn {
-      padding: 4px 10px;
-      font-size: 12px;
-      border-radius: 6px;
-      background: #2563eb;
-      color: white;
-      border: none;
-      cursor: pointer;
-      font-weight: 600;
-    }
-
-    .cancel-btn {
-      padding: 4px 10px;
-      font-size: 12px;
-      border-radius: 6px;
-      background: white;
-      color: #334155;
-      border: 1px solid #e2e8f0;
-      cursor: pointer;
-      font-weight: 600;
-    }
-
-    .save-confirm {
-      font-size: 12px;
-      color: #15803d;
-      font-weight: 600;
-    }
-
-    .save-error {
-      font-size: 12px;
-      color: #b91c1c;
-    }
-
-    /* Line items table */
-    .line-items-section {
-      margin-bottom: 20px;
-    }
-
-    .line-items-section h4 {
-      font-size: 13px;
-      font-weight: 700;
-      color: #334155;
-      margin: 0 0 8px 0;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-
-    .line-items-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-
-    .line-items-table th {
-      text-align: left;
-      padding: 8px 10px;
-      background: #f1f5f9;
-      color: #64748b;
-      font-weight: 600;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-
-    .line-items-table td {
-      padding: 8px 10px;
-      border-bottom: 1px solid #f1f5f9;
-      color: #0f172a;
-    }
-
-    .line-items-table tr.totals-row td {
-      font-weight: 700;
-      border-top: 2px solid #e2e8f0;
-      background: #f8fafc;
-    }
-
-    .no-items {
-      font-size: 13px;
-      color: #94a3b8;
-      font-style: italic;
-      padding: 8px 0;
-    }
-
-    /* Action buttons row */
-    .structured-actions {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-top: 8px;
-    }
-
-    .structured-actions button {
-      font-size: 13px;
-      padding: 8px 16px;
-    }
-
     @media (max-width: 900px) {
       .page {
         grid-template-columns: 1fr;
@@ -582,12 +331,7 @@
         </div>
         <input class="search-input" id="searchInput" placeholder="Search inside text..." />
       </div>
-      <div class="tab-bar">
-        <button class="tab-btn active" id="tabRaw">Raw Text</button>
-        <button class="tab-btn" id="tabStructured">Structured Data</button>
-      </div>
-
-      <div class="tab-content active" id="tabContentRaw">
+      <div id="tabContentRaw">
         <div class="text-area" id="textArea">Upload or select an invoice to view text.</div>
         <div class="stats">
           <div id="matchCount">Matches: 0</div>
@@ -596,12 +340,12 @@
         <div class="footer-actions">
           <button id="copyBtn">Copy Text</button>
         </div>
-      </div>
-
-      <div class="tab-content" id="tabContentStructured">
-        <div id="structuredView" style="margin-top:16px; overflow-y:auto; max-height:520px; padding-right:4px;">
-          <div style="color:#94a3b8; font-style:italic; font-size:13px;">Select an invoice to view structured data.
-          </div>
+        <div id="extractedJsonSection" style="margin-top:16px;">
+          <div
+            style="font-size:12px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:6px;">
+            Extracted Fields</div>
+          <pre id="extractedJsonBlock"
+            style="background:#f1f5f9; border-radius:12px; padding:16px; font-size:12px; overflow-x:auto; margin:0; white-space:pre-wrap; word-break:break-word;"></pre>
         </div>
       </div>
     </section>
@@ -697,11 +441,14 @@
     };
 
     let updateSelectedInvoice = () => {
+      const jsonBlock = document.getElementById("extractedJsonBlock");
+
       if (!selectedInvoice) {
         selectedTitleEl.textContent = "Select an invoice";
         selectedMetaEl.textContent = "No invoice selected";
         textAreaEl.textContent = "Upload or select an invoice to view text.";
         updateStats("", "");
+        if (jsonBlock) { jsonBlock.textContent = "Select an invoice to view extracted fields."; jsonBlock.style.color = "#94a3b8"; }
         return;
       }
 
@@ -714,27 +461,33 @@
       const text = selectedInvoice.extracted_text || "";
       textAreaEl.innerHTML = highlightMatches(text, searchTerm);
       updateStats(text, searchTerm);
+
+      if (jsonBlock) {
+        const fields = selectedInvoice?.extracted_fields;
+        if (fields && typeof fields === "object") {
+          const DISPLAY_FIELDS = [
+            "invoice_number", "invoice_date", "due_date",
+            "vendor_name", "vendor_address", "vendor_email", "vendor_phone",
+            "customer_name", "billing_address", "shipping_address",
+            "po_number", "payment_terms", "currency",
+            "subtotal", "tax_amount", "tax_rate", "discount_amount", "grand_total",
+            "notes"
+          ];
+          const clean = {};
+          DISPLAY_FIELDS.forEach(k => {
+            if (fields[k] !== undefined) clean[k] = fields[k];
+          });
+          jsonBlock.textContent = JSON.stringify(clean, null, 2);
+          jsonBlock.style.color = "#0f172a";
+        } else if (selectedInvoice?.processing_status === "failed") {
+          jsonBlock.textContent = "Extraction failed — " + (selectedInvoice.extraction_error || "unknown error");
+          jsonBlock.style.color = "#b91c1c";
+        } else {
+          jsonBlock.textContent = "No structured data yet.";
+          jsonBlock.style.color = "#94a3b8";
+        }
+      }
     };
-
-    // ── Tab switching ──────────────────────────────────────────
-    let activeTab = "raw";
-
-    document.getElementById("tabRaw").addEventListener("click", () => {
-      activeTab = "raw";
-      document.getElementById("tabRaw").classList.add("active");
-      document.getElementById("tabStructured").classList.remove("active");
-      document.getElementById("tabContentRaw").classList.add("active");
-      document.getElementById("tabContentStructured").classList.remove("active");
-    });
-
-    document.getElementById("tabStructured").addEventListener("click", () => {
-      activeTab = "structured";
-      document.getElementById("tabStructured").classList.add("active");
-      document.getElementById("tabRaw").classList.remove("active");
-      document.getElementById("tabContentStructured").classList.add("active");
-      document.getElementById("tabContentRaw").classList.remove("active");
-      if (selectedInvoice) renderStructuredView(selectedInvoice);
-    });
 
     // ── Status dot helper ──────────────────────────────────────
     const statusDotHtml = (status) => {
@@ -744,7 +497,6 @@
 
     // ── Update renderInvoices to show dot, vendor, total ──────
     // Override the existing renderInvoices function
-    const _origRenderInvoices = renderInvoices;
     renderInvoices = () => {
       invoiceListEl.innerHTML = "";
       invoices.forEach((invoice) => {
@@ -777,7 +529,6 @@
           selectedInvoice = invoice;
           updateSelectedInvoice();
           renderInvoices();
-          if (activeTab === "structured") renderStructuredView(invoice);
         });
 
         invoiceListEl.appendChild(item);
@@ -809,215 +560,6 @@
         setStatus(`Error: ${err.message}`);
       }
     });
-
-    // ── Field definitions for structured view ─────────────────
-    const FIELD_DEFS = [
-      { key: "invoice_number", label: "Invoice Number" },
-      { key: "invoice_date", label: "Invoice Date" },
-      { key: "due_date", label: "Due Date" },
-      { key: "vendor_name", label: "Vendor Name" },
-      { key: "vendor_address", label: "Vendor Address" },
-      { key: "vendor_email", label: "Vendor Email" },
-      { key: "vendor_phone", label: "Vendor Phone" },
-      { key: "customer_name", label: "Customer Name" },
-      { key: "billing_address", label: "Billing Address" },
-      { key: "shipping_address", label: "Shipping Address" },
-      { key: "po_number", label: "PO Number" },
-      { key: "payment_terms", label: "Payment Terms" },
-      { key: "currency", label: "Currency" },
-      { key: "subtotal", label: "Subtotal" },
-      { key: "tax_amount", label: "Tax Amount" },
-      { key: "tax_rate", label: "Tax Rate" },
-      { key: "discount_amount", label: "Discount Amount" },
-      { key: "grand_total", label: "Grand Total" },
-      { key: "notes", label: "Notes" },
-    ];
-
-    // ── Inline edit ────────────────────────────────────────────
-    const startEdit = (invoiceId, fieldKey, currentValue, valueEl, editBtnEl) => {
-      editBtnEl.style.display = "none";
-      const container = valueEl.parentElement;
-
-      const editDiv = document.createElement("div");
-      editDiv.className = "inline-edit";
-      editDiv.innerHTML = `
-          <input type="text" value="${currentValue !== null && currentValue !== undefined ? currentValue : ""}" />
-          <button class="save-btn">Save</button>
-          <button class="cancel-btn">Cancel</button>
-          <span class="save-confirm" style="display:none">Saved ✓</span>
-          <span class="save-error" style="display:none"></span>
-        `;
-      container.appendChild(editDiv);
-
-      const input = editDiv.querySelector("input");
-      const saveBtn = editDiv.querySelector(".save-btn");
-      const cancelBtn = editDiv.querySelector(".cancel-btn");
-      const confirm = editDiv.querySelector(".save-confirm");
-      const errEl = editDiv.querySelector(".save-error");
-
-      cancelBtn.addEventListener("click", () => {
-        editDiv.remove();
-        editBtnEl.style.display = "";
-      });
-
-      saveBtn.addEventListener("click", async () => {
-        const newVal = input.value.trim();
-        try {
-          const res = await fetch(`${API_BASE}/invoices/${invoiceId}/fields`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ field_name: fieldKey, corrected_value: newVal }),
-          });
-          if (!res.ok) {
-            const err = await res.json();
-            throw new Error(err.detail || "Save failed");
-          }
-          valueEl.textContent = newVal || "Not found";
-          valueEl.className = newVal ? "field-value" : "field-value null-value";
-          confirm.style.display = "inline";
-          setTimeout(() => {
-            editDiv.remove();
-            editBtnEl.style.display = "";
-          }, 1200);
-          // Update local invoice cache
-          if (selectedInvoice && selectedInvoice.extracted_fields) {
-            selectedInvoice.extracted_fields[fieldKey] = newVal;
-          }
-        } catch (err) {
-          errEl.textContent = err.message;
-          errEl.style.display = "inline";
-        }
-      });
-    };
-
-    // ── Render structured view ─────────────────────────────────
-    const renderStructuredView = (invoice) => {
-      const container = document.getElementById("structuredView");
-      const fields = invoice.extracted_fields || {};
-      const validation = invoice.validation_result || {};
-      const score = validation.confidence_score;
-      const missing = validation.missing_fields || [];
-
-      let html = "";
-
-      // Confidence badge
-      if (score != null) {
-        let badgeClass = score >= 0.8 ? "badge-green" : score >= 0.6 ? "badge-amber" : "badge-red";
-        html += `<div class="confidence-badge ${badgeClass}">Confidence: ${score.toFixed(2)}</div>`;
-      }
-
-      // Missing fields warning
-      if (missing.length > 0) {
-        html += `<div class="missing-warning">⚠ Missing fields: ${missing.join(", ")}</div>`;
-      }
-
-      // Fields grid
-      html += `<div class="fields-grid">`;
-      FIELD_DEFS.forEach(({ key, label }) => {
-        const val = fields[key];
-        const displayVal = val != null && val !== "" ? val : null;
-        html += `
-            <div class="field-row" data-field="${key}">
-              <span class="field-label">${label}</span>
-              <span class="field-value ${displayVal === null ? "null-value" : ""}" data-value-key="${key}">${displayVal !== null ? displayVal : "Not found"}</span>
-              <button class="edit-btn" title="Edit">✏</button>
-            </div>`;
-      });
-      html += `</div>`;
-
-      // Line items table
-      const lineItems = fields.line_items || [];
-      html += `<div class="line-items-section"><h4>Line Items</h4>`;
-      if (lineItems.length === 0) {
-        html += `<div class="no-items">No line items found</div>`;
-      } else {
-        html += `<table class="line-items-table">
-            <thead><tr><th>Description</th><th>Qty</th><th>Unit Price</th><th>Total</th></tr></thead>
-            <tbody>`;
-        lineItems.forEach(item => {
-          html += `<tr>
-              <td>${item.description || ""}</td>
-              <td>${item.quantity != null ? item.quantity : ""}</td>
-              <td>${item.unit_price != null ? item.unit_price : ""}</td>
-              <td>${item.total_price != null ? item.total_price : ""}</td>
-            </tr>`;
-        });
-        html += `</tbody>
-            <tfoot><tr class="totals-row">
-              <td colspan="3">Grand Total</td>
-              <td>${fields.grand_total != null ? fields.grand_total : ""}</td>
-            </tr></tfoot>
-          </table>`;
-      }
-      html += `</div>`;
-
-      // Action buttons
-      html += `<div class="structured-actions">
-          <button id="btnReprocess">Reprocess</button>
-          <button id="btnMarkReviewed" class="secondary">Mark as Reviewed</button>
-          <button id="btnCopyJson" class="ghost">Copy JSON</button>
-        </div>`;
-
-      container.innerHTML = html;
-
-      // Wire up edit buttons
-      container.querySelectorAll(".field-row").forEach(row => {
-        const fieldKey = row.dataset.field;
-        const valueEl = row.querySelector(".field-value");
-        const editBtn = row.querySelector(".edit-btn");
-        editBtn.addEventListener("click", () => {
-          startEdit(invoice._id, fieldKey, fields[fieldKey], valueEl, editBtn);
-        });
-      });
-
-      // Reprocess button
-      document.getElementById("btnReprocess").addEventListener("click", async () => {
-        setStatus("Reprocessing...", true);
-        try {
-          const res = await fetch(`${API_BASE}/invoices/${invoice._id}/reprocess`, { method: "POST" });
-          if (!res.ok) throw new Error("Reprocess failed");
-          setStatus("Reprocessed — refreshing...");
-          await fetchInvoices();
-          // Re-render with updated data
-          const updated = invoices.find(i => i._id === invoice._id);
-          if (updated) { selectedInvoice = updated; renderStructuredView(updated); }
-        } catch (err) {
-          setStatus(`Error: ${err.message}`);
-        }
-      });
-
-      // Mark as reviewed button
-      document.getElementById("btnMarkReviewed").addEventListener("click", async () => {
-        try {
-          const res = await fetch(`${API_BASE}/invoices/${invoice._id}/mark-reviewed`, { method: "PATCH" });
-          if (!res.ok) throw new Error("Failed to mark reviewed");
-          setStatus("Marked as reviewed ✓");
-          await fetchInvoices();
-        } catch (err) {
-          setStatus(`Error: ${err.message}`);
-        }
-      });
-
-      // Copy JSON button
-      document.getElementById("btnCopyJson").addEventListener("click", async () => {
-        try {
-          await navigator.clipboard.writeText(JSON.stringify(fields, null, 2));
-          setStatus("JSON copied to clipboard ✓");
-        } catch {
-          setStatus("Copy failed");
-        }
-      });
-    };
-
-    // ── Also render structured view when invoice selected ─────
-    // Patch updateSelectedInvoice to also refresh structured tab
-    const _origUpdateSelectedInvoice = updateSelectedInvoice;
-    updateSelectedInvoice = () => {
-      _origUpdateSelectedInvoice();
-      if (activeTab === "structured" && selectedInvoice) {
-        renderStructuredView(selectedInvoice);
-      }
-    };
 
     const fetchInvoices = async () => {
       try {

@@ -4,8 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 import database
-from routes import search, upload
-from routes import structured
+from routes import search, upload, structured
 
 
 
@@ -21,7 +20,6 @@ app.add_middleware(
 
 app.include_router(upload.router)
 app.include_router(search.router)
-from routes import structured
 app.include_router(structured.router)
 
 
