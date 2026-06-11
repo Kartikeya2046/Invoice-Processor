@@ -8,8 +8,6 @@ from routes import search, upload
 from routes import structured
 
 
-import os
-print("GROQ_API_KEY loaded:", os.getenv("GROQ_API_KEY", "NOT SET")[:15])
 
 app = FastAPI()
 
@@ -35,8 +33,8 @@ def health_check():
 @app.on_event("startup")
 async def startup_event():
 	import os
-	groq_key = os.getenv("GROQ_API_KEY", "NOT SET")
-	print(f"GROQ_API_KEY status: {'SET ('+groq_key[:8]+'...)' if groq_key != 'NOT SET' else 'NOT SET - extraction will fail'}")
+	gemini_key = os.getenv("GEMINI_API_KEY", "NOT SET")
+	print(f"GEMINI_API_KEY status: {'SET ('+gemini_key[:8]+'...)' if gemini_key != 'NOT SET' else 'NOT SET - extraction will fail'}")
 	if database.database is None:
 		print("MongoDB connection unavailable; starting FastAPI without database access")
 

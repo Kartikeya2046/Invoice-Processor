@@ -96,7 +96,7 @@ cp .env.example .env
 uvicorn main:app --reload
 ```
 
-The API will be live at `http://localhost:8000`. Visit `http://localhost:8000/docs` for the interactive Swagger UI.
+The API will be live at `http://localhost:8001`. Visit `http://localhost:8001/docs` for the interactive Swagger UI.
 
 ---
 
@@ -111,7 +111,7 @@ The API will be live at `http://localhost:8000`. Visit `http://localhost:8000/do
 ### Upload an invoice
 
 ```bash
-curl -X POST http://localhost:8000/upload \
+curl -X POST http://localhost:8001/upload \
   -F "file=@invoice.pdf"
 ```
 
@@ -127,7 +127,7 @@ curl -X POST http://localhost:8000/upload \
 ### Search invoices
 
 ```bash
-curl -X POST http://localhost:8000/search \
+curl -X POST http://localhost:8001/search \
   -H "Content-Type: application/json" \
   -d '{"query": "Acme Corp", "limit": 10}'
 ```
