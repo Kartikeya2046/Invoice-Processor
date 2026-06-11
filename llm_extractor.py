@@ -1,4 +1,4 @@
-"""LLM-based structured field extraction via Groq API."""
+"""LLM-based structured field extraction via Google Gemini API."""
 
 import json
 import logging
@@ -9,8 +9,8 @@ from urllib import request as urllib_request
 
 logger = logging.getLogger(__name__)
 
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 
 
 def build_invoice_prompt(cleaned_text: str) -> str:
@@ -60,7 +60,7 @@ Respond ONLY with a valid JSON object. No explanation. No markdown. No code fenc
 - tax_rate: percentage (number only, e.g. 18 not 18%)
 - discount_amount: discount applied (number only)
 - shipping_amount: freight/shipping charge (number only)
-- grand_total: final total — look for "Please pay this amount", "Total Due", "Grand Total", "Amount Due" (number only)
+- grand_total: final total — "Please pay this amount", "Total Due", "Grand Total", "Amount Due" (number only)
 
 Line items array — each object:
 - line_number, part_number, manufacturer_part_number, description
@@ -78,27 +78,29 @@ DOCUMENT TEXT:
 {cleaned_text}"""
 
 
-def call_groq(prompt: str) -> str:
-    """Call Groq API and return raw response text."""
-    if not GROQ_API_KEY:
-        raise RuntimeError("GROQ_API_KEY environment variable not set")
+def call_gemini(prompt: str) -> str:
+    """Call Gemini API and return raw response text."""
+    if not GEMINI_API_KEY:
+        raise RuntimeError("GEMINI_API_KEY environment variable not set")
 
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {GROQ_API_KEY}"
-    }
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={GEMINI_API_KEY}"
 
     payload = {
-        "model": GROQ_MODEL,
-        "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0.0,
-        "max_tokens": 4096,
+        "contents": [
+            {
+                "parts": [{"text": prompt}]
+            }
+        ],
+        "generationConfig": {
+            "temperature": 0.0,
+            "maxOutputTokens": 8192,
+        }
     }
 
     req = urllib_request.Request(
-        "https://api.groq.com/openai/v1/chat/completions",
+        url,
         data=json.dumps(payload).encode("utf-8"),
-        headers=headers,
+        headers={"Content-Type": "application/json"},
         method="POST",
     )
 
@@ -108,12 +110,12 @@ def call_groq(prompt: str) -> str:
     try:
         data = json.loads(body)
     except json.JSONDecodeError as exc:
-        raise RuntimeError(f"Groq returned invalid JSON: {exc}") from exc
+        raise RuntimeError(f"Gemini returned invalid JSON: {exc}") from exc
 
-    if "choices" not in data or not data["choices"]:
-        raise RuntimeError(f"Groq response missing choices: {data}")
-
-    return data["choices"][0]["message"]["content"]
+    try:
+        return data["candidates"][0]["content"]["parts"][0]["text"]
+    except (KeyError, IndexError) as exc:
+        raise RuntimeError(f"Gemini response missing expected fields: {data}") from exc
 
 
 def parse_llm_response(response_text: str) -> dict | None:
@@ -135,10 +137,10 @@ def parse_llm_response(response_text: str) -> dict | None:
 
 
 def extract_invoice_fields(ocr_text: str) -> dict | None:
-    """Full extraction pipeline: prompt -> Groq -> parse."""
+    """Full extraction pipeline: prompt -> Gemini -> parse."""
     prompt = build_invoice_prompt(ocr_text)
     try:
-        raw_response = call_groq(prompt)
+        raw_response = call_gemini(prompt)
         cleaned = re.sub(r"```json|```", "", raw_response)
         start = cleaned.find('{')
         end = cleaned.rfind('}')
@@ -146,9 +148,9 @@ def extract_invoice_fields(ocr_text: str) -> dict | None:
             cleaned = cleaned[start:end + 1]
         return json.loads(cleaned)
     except urllib_error.HTTPError as e:
-        raise ConnectionError(f"Groq HTTP error: {e}") from e
+        raise ConnectionError(f"Gemini HTTP error: {e}") from e
     except urllib_error.URLError as e:
-        raise ConnectionError(f"Groq connection error: {e}") from e
+        raise ConnectionError(f"Gemini connection error: {e}") from e
     except json.JSONDecodeError as e:
         snippet = raw_response[:300] if 'raw_response' in locals() else ''
         raise ValueError(f"LLM JSON decode error: {e}. Snippet: {snippet}") from e
