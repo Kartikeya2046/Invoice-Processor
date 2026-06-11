@@ -1,4 +1,4 @@
-"""LLM-based structured field extraction via Google Gemini API."""
+"""LLM-based structured field extraction via Mistral AI API."""
 
 import json
 import logging
@@ -6,8 +6,68 @@ import os
 import re
 from urllib import error as urllib_error
 from urllib import request as urllib_request
+import time
 
 logger = logging.getLogger(__name__)
+
+
+def call_mistral(prompt: str) -> str:
+    """Call Mistral API and return raw response text. Retries on 429."""
+    MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
+    MISTRAL_MODEL = os.getenv("MISTRAL_MODEL", "mistral-small-latest")
+
+    if not MISTRAL_API_KEY:
+        raise RuntimeError("MISTRAL_API_KEY environment variable not set")
+
+    url = "https://api.mistral.ai/v1/chat/completions"
+
+    payload = {
+        "model": MISTRAL_MODEL,
+        "messages": [
+            {"role": "user", "content": prompt}
+        ],
+        "temperature": 0.0,
+        "max_tokens": 8192,
+    }
+
+    MAX_RETRIES = 3
+    RETRY_DELAYS = [15, 30, 60]
+    last_error = None
+
+    for attempt in range(MAX_RETRIES):
+        try:
+            req = urllib_request.Request(
+                url,
+                data=json.dumps(payload).encode("utf-8"),
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {MISTRAL_API_KEY}",
+                },
+                method="POST",
+            )
+            with urllib_request.urlopen(req, timeout=60) as response:
+                body = response.read().decode("utf-8")
+
+            try:
+                data = json.loads(body)
+            except json.JSONDecodeError as exc:
+                raise RuntimeError(f"Mistral returned invalid JSON: {exc}") from exc
+
+            try:
+                return data["choices"][0]["message"]["content"]
+            except (KeyError, IndexError) as exc:
+                raise RuntimeError(f"Mistral response missing expected fields: {data}") from exc
+
+        except urllib_error.HTTPError as e:
+            if e.code == 429 and attempt < MAX_RETRIES - 1:
+                wait = RETRY_DELAYS[attempt]
+                logger.warning(f"Mistral 429 rate limit hit, retrying in {wait}s (attempt {attempt + 1}/{MAX_RETRIES})")
+                time.sleep(wait)
+                last_error = e
+                continue
+            raise ConnectionError(f"Mistral HTTP error: {e}") from e
+
+    raise ConnectionError(f"Mistral rate limit exceeded after {MAX_RETRIES} attempts: {last_error}")
 
 
 def build_invoice_prompt(cleaned_text: str) -> str:
@@ -90,85 +150,11 @@ DOCUMENT TEXT:
 {cleaned_text}"""
 
 
-def call_gemini(prompt: str) -> str:
-    """Call Gemini API and return raw response text. Retries on 429."""
-    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-    GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
-    import time
-
-    if not GEMINI_API_KEY:
-        raise RuntimeError("GEMINI_API_KEY environment variable not set")
-
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={GEMINI_API_KEY}"
-
-    payload = {
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {
-            "temperature": 0.0,
-            "maxOutputTokens": 8192,
-        }
-    }
-
-    MAX_RETRIES = 3
-    RETRY_DELAYS = [15, 30, 60]  # seconds between retries
-
-    last_error = None
-    for attempt in range(MAX_RETRIES):
-        try:
-            req = urllib_request.Request(
-                url,
-                data=json.dumps(payload).encode("utf-8"),
-                headers={"Content-Type": "application/json"},
-                method="POST",
-            )
-            with urllib_request.urlopen(req, timeout=60) as response:
-                body = response.read().decode("utf-8")
-
-            try:
-                data = json.loads(body)
-            except json.JSONDecodeError as exc:
-                raise RuntimeError(f"Gemini returned invalid JSON: {exc}") from exc
-
-            try:
-                return data["candidates"][0]["content"]["parts"][0]["text"]
-            except (KeyError, IndexError) as exc:
-                raise RuntimeError(f"Gemini response missing expected fields: {data}") from exc
-
-        except urllib_error.HTTPError as e:
-            if e.code == 429 and attempt < MAX_RETRIES - 1:
-                wait = RETRY_DELAYS[attempt]
-                logger.warning(f"Gemini 429 rate limit hit, retrying in {wait}s (attempt {attempt + 1}/{MAX_RETRIES})")
-                time.sleep(wait)
-                last_error = e
-                continue
-            raise ConnectionError(f"Gemini HTTP error: {e}") from e
-
-    raise ConnectionError(f"Gemini rate limit exceeded after {MAX_RETRIES} attempts: {last_error}")
-
-
-def parse_llm_response(response_text: str) -> dict | None:
-    if not response_text:
-        return None
-    try:
-        return json.loads(response_text.strip())
-    except json.JSONDecodeError:
-        pass
-    start = response_text.find('{')
-    end = response_text.rfind('}')
-    if start != -1 and end != -1 and end > start:
-        try:
-            return json.loads(response_text[start:end + 1])
-        except json.JSONDecodeError:
-            pass
-    logger.error(f"Failed to parse LLM response: {response_text[:500]}")
-    return None
-
-
 def extract_invoice_fields(ocr_text: str) -> dict | None:
-    """Full extraction pipeline: prompt -> Gemini -> parse."""
+    """Full extraction pipeline: prompt -> Mistral -> parse."""
     prompt = build_invoice_prompt(ocr_text)
     try:
-        raw_response = call_gemini(prompt)
+        raw_response = call_mistral(prompt)
         cleaned = re.sub(r"```json|```", "", raw_response)
         start = cleaned.find('{')
         end = cleaned.rfind('}')
@@ -176,9 +162,9 @@ def extract_invoice_fields(ocr_text: str) -> dict | None:
             cleaned = cleaned[start:end + 1]
         return json.loads(cleaned)
     except urllib_error.HTTPError as e:
-        raise ConnectionError(f"Gemini HTTP error: {e}") from e
+        raise ConnectionError(f"Mistral HTTP error: {e}") from e
     except urllib_error.URLError as e:
-        raise ConnectionError(f"Gemini connection error: {e}") from e
+        raise ConnectionError(f"Mistral connection error: {e}") from e
     except json.JSONDecodeError as e:
         snippet = raw_response[:300] if 'raw_response' in locals() else ''
         raise ValueError(f"LLM JSON decode error: {e}. Snippet: {snippet}") from e
