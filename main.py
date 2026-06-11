@@ -32,7 +32,9 @@ def health_check():
 async def startup_event():
 	import os
 	gemini_key = os.getenv("GEMINI_API_KEY", "NOT SET")
-	print(f"GEMINI_API_KEY status: {'SET ('+gemini_key[:8]+'...)' if gemini_key != 'NOT SET' else 'NOT SET - extraction will fail'}")
+	gemini_model = os.getenv("GEMINI_MODEL", "NOT SET")
+	print(f"GEMINI_API_KEY: '{gemini_key}'")
+	print(f"GEMINI_MODEL: '{gemini_model}'")
 	if database.database is None:
 		print("MongoDB connection unavailable; starting FastAPI without database access")
 
