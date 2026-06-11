@@ -27,7 +27,7 @@ def call_mistral(prompt: str) -> str:
             {"role": "user", "content": prompt}
         ],
         "temperature": 0.0,
-        "max_tokens": 8192,
+        "max_tokens": 32000,
     }
 
     MAX_RETRIES = 3
@@ -141,6 +141,12 @@ Line items array — each object:
 - total_price: line total (number only)
 
 === GENERAL RULES ===
+IMPORTANT — RESPONSE LENGTH: If the document has many line items and you are at risk of
+hitting a token limit, prioritize the header fields first (all fields except line_items),
+then include as many line items as fit. Never truncate a JSON string mid-value — always
+close all brackets and braces to produce valid JSON. If you must stop early on line items,
+close the line_items array and the root object properly.
+
 - Missing field = null, never guess
 - Numbers: no currency symbols, no commas
 - Dates: YYYY-MM-DD format
