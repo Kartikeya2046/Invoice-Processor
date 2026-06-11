@@ -9,9 +9,6 @@ from urllib import request as urllib_request
 
 logger = logging.getLogger(__name__)
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
-
 
 def build_invoice_prompt(cleaned_text: str) -> str:
     return f"""You are a commercial document data extraction assistant.
@@ -95,6 +92,8 @@ DOCUMENT TEXT:
 
 def call_gemini(prompt: str) -> str:
     """Call Gemini API and return raw response text. Retries on 429."""
+    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+    GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
     import time
 
     if not GEMINI_API_KEY:
