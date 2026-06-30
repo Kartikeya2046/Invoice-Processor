@@ -1,0 +1,7 @@
+def _autodetect_backend() -> str:
+    if settings.SURYA_INFERENCE_BACKEND:
+        return settings.SURYA_INFERENCE_BACKEND
+    # NVIDIA GPU → vllm, mps/cpu → llamacpp
+    if _has_nvidia_gpu():
+        return "vllm"
+    return "llamacpp"

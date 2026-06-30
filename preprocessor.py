@@ -51,6 +51,17 @@ def classify_document(cleaned_text: str) -> dict:
 
     text_lower = cleaned_text.lower()
 
+    # Checked first and independently of the scored categories below: BOE
+    # documents have unambiguous, near-universal markers, so a direct hit
+    # short-circuits straight to bill_of_entry rather than competing on the
+    # same 0-4-keyword confidence scale as the commercial-document types.
+    boe_keywords = [
+        'bill of entry', 'b/e number', 'be number', 'b.e. number',
+        'boe number', 'boe no', 'b/e date', 'boe date'
+    ]
+    if any(kw in text_lower for kw in boe_keywords):
+        return {'type': 'bill_of_entry', 'confidence': 1.0, 'matched_keywords': 1}
+
     invoice_keywords = [
         'invoice', 'invoice number', 'invoice date', 'inv #', 'inv no',
         'bill to', 'ship to', 'amount due', 'subtotal', 'payment terms',

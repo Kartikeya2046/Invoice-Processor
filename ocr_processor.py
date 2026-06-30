@@ -1,80 +1,51 @@
-"""OCR and document text extraction helpers."""
+"""Document text extraction via Surya 2 (replaces Tesseract/pdfplumber OCR).
+
+process_file() keeps the same signature as the old Tesseract version --
+takes a file path, returns plain text -- so preprocessor.py/llm_extractor.py
+downstream are unaffected by this swap. Table structure (Surya's table_rec)
+is intentionally not used: line items are extracted by the LLM directly from
+plain OCR text via llm_extractor.py's prompt, not from table geometry.
+"""
 
 import os
+import re
+from typing import List
 
-from PIL import Image
-import pdfplumber
 from pdf2image import convert_from_path
-import pytesseract
+from PIL import Image
 
-from config import TESSERACT_PATH
+from surya.inference import SuryaInferenceManager
+from surya.recognition import RecognitionPredictor
 
+IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff"}
 
-pytesseract.pytesseract.tesseract_cmd = TESSERACT_PATH
-
-
-def extract_from_image(image_path: str) -> str:
-	"""Extract text from an image file using Tesseract OCR."""
-
-	try:
-		with Image.open(image_path) as image:
-			text = pytesseract.image_to_string(image)
-		return text.strip()
-	except Exception as error:
-		return f"Error extracting text from image: {error}"
+# ponytail: one shared manager/predictor for the process lifetime -- model
+# load is the expensive part. Set SURYA_INFERENCE_KEEP_ALIVE=1 so the
+# underlying vllm/llama.cpp server also survives across requests, not just
+# across calls within one process.
+_manager = SuryaInferenceManager(method="llamacpp")
+_recognition_predictor = RecognitionPredictor(_manager)
 
 
-def extract_scanned_pdf(pdf_path: str) -> str:
-	"""Extract text from a scanned PDF by converting pages to images first."""
-
-	try:
-		pages = convert_from_path(pdf_path)
-		extracted_text = []
-
-		for page in pages:
-			text = pytesseract.image_to_string(page)
-			if text:
-				extracted_text.append(text.strip())
-
-		return "\n\n".join(extracted_text).strip()
-	except Exception as error:
-		return f"Error extracting scanned PDF text: {error}"
-
-
-def extract_from_pdf(pdf_path: str) -> str:
-	"""Extract text from a PDF, falling back to OCR for scanned documents."""
-
-	try:
-		extracted_text = []
-
-		with pdfplumber.open(pdf_path) as pdf:
-			for page in pdf.pages:
-				text = page.extract_text()
-				if text:
-					extracted_text.append(text.strip())
-
-		combined_text = "\n\n".join(extracted_text).strip()
-		if combined_text:
-			return combined_text
-
-		return extract_scanned_pdf(pdf_path)
-	except Exception as error:
-		return f"Error extracting text from PDF: {error}"
+def _load_pages(file_path: str) -> List[Image.Image]:
+    """Load a PDF or image file as a list of PIL pages."""
+    ext = os.path.splitext(file_path)[1].lower()
+    if ext == ".pdf":
+        return convert_from_path(file_path)
+    if ext in IMAGE_EXTENSIONS:
+        return [Image.open(file_path)]
+    raise ValueError(f"Unsupported file format: {ext}")
 
 
 def process_file(file_path: str) -> str:
-	"""Dispatch text extraction based on the file extension."""
-
-	try:
-		file_extension = os.path.splitext(file_path)[1].lower()
-
-		if file_extension == ".pdf":
-			return extract_from_pdf(file_path)
-
-		if file_extension in {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff"}:
-			return extract_from_image(file_path)
-
-		return f"Unsupported file format: {file_extension}"
-	except Exception as error:
-		return f"Error processing file: {error}"
-
+    """Extract plain text from a PDF or image via Surya 2 full-page OCR."""
+    try:
+        pages = _load_pages(file_path)
+        predictions = _recognition_predictor(pages)
+        page_texts = []
+        for page in predictions:
+            block_texts = [re.sub(r"<[^>]+>", " ", b.html) for b in page.blocks if b.html]
+            page_texts.append("\n".join(t.strip() for t in block_texts if t.strip()))
+        return "\n\n".join(page_texts).strip()
+    except Exception as error:
+        return f"Error processing file: {error}"

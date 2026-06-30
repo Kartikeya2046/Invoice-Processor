@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="api-base" content="https://web-production-d5954.up.railway.app" />
+  <meta name="api-base" content="http://localhost:8000" />
   <title>Invoice Processor</title>
   <style>
     :root {
@@ -329,15 +329,15 @@
           <div class="title" id="selectedTitle">Select an invoice</div>
           <div class="invoice-meta" id="selectedMeta">No invoice selected</div>
         </div>
-        <input class="search-input" id="searchInput" placeholder="Search inside text..." />
+        <input class="search-input" id="searchInput" placeholder="Search inside text..." style="display:none;" />
       </div>
       <div id="tabContentRaw">
-        <div class="text-area" id="textArea">Upload or select an invoice to view text.</div>
-        <div class="stats">
+        <div class="text-area" id="textArea" style="display:none;">Upload or select an invoice to view text.</div>
+        <div class="stats" style="display:none;">
           <div id="matchCount">Matches: 0</div>
           <div id="charCount">Characters: 0</div>
         </div>
-        <div class="footer-actions">
+        <div class="footer-actions" style="display:none;">
           <button id="copyBtn">Copy Text</button>
         </div>
         <div id="extractedJsonSection" style="margin-top:16px;">
@@ -347,6 +347,7 @@
           <pre id="extractedJsonBlock"
             style="background:#f1f5f9; border-radius:12px; padding:16px; font-size:12px; overflow-x:auto; margin:0; white-space:pre-wrap; word-break:break-word;"></pre>
         </div>
+        <div id="lineItemsBlock" style="margin-top:16px;"></div>
       </div>
     </section>
   </div>
@@ -355,7 +356,7 @@
 
   <script>
     // UPDATE THIS TO YOUR BACKEND DEPLOYMENT URL
-    const API_BASE = "https://web-production-d5954.up.railway.app";
+    const API_BASE = "http://127.0.0.1:8000";
 
     if (!API_BASE) {
       setTimeout(() => {
@@ -441,8 +442,8 @@
     };
 
     let updateSelectedInvoice = () => {
+      const isBOE = selectedInvoice?.document_type === "bill_of_entry";
       const jsonBlock = document.getElementById("extractedJsonBlock");
-
       if (!selectedInvoice) {
         selectedTitleEl.textContent = "Select an invoice";
         selectedMetaEl.textContent = "No invoice selected";
@@ -463,19 +464,18 @@
       updateStats(text, searchTerm);
 
       if (jsonBlock) {
-        const fields = selectedInvoice?.extracted_fields;
+        const fields = isBOE ? selectedInvoice?.extracted_boe_fields : selectedInvoice?.extracted_fields;
         if (fields && typeof fields === "object") {
-          const DISPLAY_FIELDS = [
-            "invoice_number", "invoice_date", "due_date",
-            "vendor_name", "vendor_address", "vendor_email", "vendor_phone",
-            "customer_name", "billing_address", "shipping_address",
-            "po_number", "payment_terms", "currency",
-            "subtotal", "tax_amount", "tax_rate", "discount_amount", "grand_total",
-            "notes"
-          ];
+          const DISPLAY_FIELDS = isBOE
+            ? ["boe_number", "boe_date", "igst", "cust_duty", "sbcess"]
+            : ["invoice_number", "invoice_date", "po_number", "supplier", "quantity", "unit_price", "cgst", "sgst"];
           const clean = {};
           DISPLAY_FIELDS.forEach(k => {
-            if (fields[k] !== undefined) clean[k] = fields[k];
+            if (fields[k] !== undefined) {
+              clean[k] = fields[k];
+            } else if (!isBOE && (k === "cgst" || k === "sgst")) {
+              clean[k] = null;
+            }
           });
           jsonBlock.textContent = JSON.stringify(clean, null, 2);
           jsonBlock.style.color = "#0f172a";
@@ -485,6 +485,41 @@
         } else {
           jsonBlock.textContent = "No structured data yet.";
           jsonBlock.style.color = "#94a3b8";
+        }
+      }
+
+      const lineItemsBlock = document.getElementById("lineItemsBlock");
+      if (lineItemsBlock) {
+        const lineItems = selectedInvoice?.extracted_fields?.line_items || [];
+
+        if (isBOE || lineItems.length === 0) {
+          lineItemsBlock.innerHTML = "";
+        } else {
+          const rowsHtml = lineItems.map(item => `
+            <tr>
+              <td style="padding:8px; border:1px solid #e2e8f0;">${escapeHtml(String(item.product_id ?? ""))}</td>
+              <td style="padding:8px; border:1px solid #e2e8f0;">${escapeHtml(String(item.quantity ?? ""))}</td>
+              <td style="padding:8px; border:1px solid #e2e8f0;">${escapeHtml(String(item.unit_price ?? ""))}</td>
+            </tr>
+          `).join("");
+
+          lineItemsBlock.innerHTML = `
+            <div style="font-size:12px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:6px;">
+              Line Items
+            </div>
+            <table style="width:100%; border-collapse:collapse; font-size:12px; color:#0f172a; background:#fff; text-align:left;">
+              <thead>
+                <tr style="background:#f1f5f9;">
+                  <th style="padding:8px; border:1px solid #e2e8f0; font-weight:600;">Product ID</th>
+                  <th style="padding:8px; border:1px solid #e2e8f0; font-weight:600;">Quantity</th>
+                  <th style="padding:8px; border:1px solid #e2e8f0; font-weight:600;">Unit Price</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rowsHtml}
+              </tbody>
+            </table>
+          `;
         }
       }
     };
@@ -508,10 +543,7 @@
 
         const createdAt = invoice.created_at ? new Date(invoice.created_at).toLocaleString() : "";
         const status = invoice.processing_status || "pending";
-        const vendor = invoice.extracted_fields?.vendor_name || "";
-        const total = invoice.extracted_fields?.grand_total != null
-          ? invoice.extracted_fields.grand_total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-          : "";
+        const vendor = invoice.extracted_fields?.supplier || "";
 
         item.innerHTML = `
             <div class="invoice-item-row">
@@ -519,7 +551,7 @@
                 ${statusDotHtml(status)}
                 <span class="invoice-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${invoice.filename}</span>
               </div>
-              ${total ? `<span class="invoice-total">${invoice.extracted_fields?.currency || ""}${total}</span>` : ""}
+
             </div>
             ${vendor ? `<div class="invoice-vendor">${vendor}</div>` : ""}
             <div class="invoice-meta">${createdAt}</div>

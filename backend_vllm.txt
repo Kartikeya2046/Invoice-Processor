@@ -1,0 +1,13 @@
+def _build_backend(method: str) -> Backend:
+    method = method.lower()
+    if method == "vllm":
+        from surya.inference.backends.vllm import VllmBackend
+
+        return VllmBackend()
+    if method == "llamacpp":
+        from surya.inference.backends.llamacpp import LlamaCppBackend
+
+        return LlamaCppBackend()
+    raise ValueError(
+        f"Unknown inference backend {method!r}. Supported: 'vllm', 'llamacpp'."
+    )
