@@ -70,34 +70,33 @@ async def upload_file(file: UploadFile = File(...)):
         doc_type = classification.get("type")
         doc_confidence = classification.get("confidence")
 
-        try:
-            if doc_type == "bill_of_entry":
-                extracted_boe_fields = await run_in_threadpool(extract_boe_fields, text_for_llm)
-                validation_dict = validate_boe_fields(extracted_boe_fields.model_dump())
-            else:
-                if doc_type != "invoice":
-                    extraction_error = (
-                        f"Classifier flagged as '{doc_type}' (confidence {doc_confidence}) "
-                        "-- attempting invoice extraction anyway"
-                    )
-                extracted_fields = await run_in_threadpool(extract_invoice_fields, text_for_llm)
-                validation_dict = validate_invoice_fields(extracted_fields.model_dump())
+        if doc_type == "bill_of_entry":
+            extracted_boe_fields = await run_in_threadpool(extract_boe_fields, text_for_llm)
+            validation_dict = validate_boe_fields(extracted_boe_fields.model_dump())
+        else:
+            if doc_type != "invoice":
+                extraction_error = (
+                    f"Classifier flagged as '{doc_type}' (confidence {doc_confidence}) "
+                    "-- attempting invoice extraction anyway"
+                )
+            extracted_fields = await run_in_threadpool(extract_invoice_fields, text_for_llm)
+            validation_dict = validate_invoice_fields(extracted_fields.model_dump())
 
-            validation_result = ValidationResult(
-                confidence_score=validation_dict["confidence_score"],
-                needs_review=validation_dict["needs_review"],
-                missing_fields=validation_dict["missing_fields"],
-                issues=validation_dict["issues"],
-            )
+        validation_result = ValidationResult(
+            confidence_score=validation_dict["confidence_score"],
+            needs_review=validation_dict["needs_review"],
+            missing_fields=validation_dict["missing_fields"],
+            issues=validation_dict["issues"],
+        )
 
-            if not validation_dict["needs_review"]:
-                processing_status = ProcessingStatus.extracted
-            else:
-                processing_status = ProcessingStatus.review_required
+        if not validation_dict["needs_review"]:
+            processing_status = ProcessingStatus.extracted
+        else:
+            processing_status = ProcessingStatus.review_required
 
-        except Exception as e:
-            processing_status = ProcessingStatus.failed
-            extraction_error = str(e)
+    except Exception as e:
+        processing_status = ProcessingStatus.failed
+        extraction_error = str(e)
 
     finally:
         if temp_path.exists():

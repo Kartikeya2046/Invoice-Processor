@@ -26,13 +26,6 @@ MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "invoice_processor")
 
 import sys
 
-def _resolve_tesseract_path(path_value: str) -> str:
-    path = Path(path_value)
-    if path.is_dir():
-        binary = "tesseract.exe" if sys.platform == "win32" else "tesseract"
-        return str(path / binary)
-    return path_value
 
-
-TESSERACT_PATH = _resolve_tesseract_path(os.getenv("TESSERACT_PATH", "tesseract"))
+POPPLER_PATH = os.getenv("POPPLER_PATH", None)
 

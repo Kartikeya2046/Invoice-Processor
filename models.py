@@ -23,13 +23,22 @@ class ProcessingStatus(str, Enum):
     failed = "failed"
 
 
+# ponytail: numeric-only regex stops the extractor LLM from writing hedging
+# prose into a value field ("bytes not shown, but assumed to be...") instead
+# of null when uncertain -- Ollama's format= constrained decoding enforces
+# this pattern at generation time. Ceiling: only catches structurally
+# non-numeric hallucinations, not a plausible-looking wrong number. If that
+# starts happening, cross-check the value against OCR text instead.
+_NUMERIC_PATTERN = r"^[0-9]+(\.[0-9]+)?$"
+
+
 class LineItem(BaseModel):
     """A single product row inside an invoice's line items table."""
 
     line_number: Optional[str] = None
     product_id: Optional[str] = None
-    quantity: Optional[str] = None
-    unit_price: Optional[str] = None
+    quantity: Optional[str] = Field(default=None, pattern=_NUMERIC_PATTERN)
+    unit_price: Optional[str] = Field(default=None, pattern=_NUMERIC_PATTERN)
 
 
 class ExtractedInvoiceData(BaseModel):
@@ -39,8 +48,8 @@ class ExtractedInvoiceData(BaseModel):
     supplier: Optional[str] = None
     invoice_number: Optional[str] = None
     invoice_date: Optional[str] = None
-    quantity: Optional[str] = None  # header/total quantity, distinct from per-line quantity
-    unit_price: Optional[str] = None  # header/total unit price, distinct from per-line unit_price
+    quantity: Optional[str] = Field(default=None, pattern=_NUMERIC_PATTERN)  # header/total quantity, distinct from per-line quantity
+    unit_price: Optional[str] = Field(default=None, pattern=_NUMERIC_PATTERN)  # header/total unit price, distinct from per-line unit_price
     cgst: Optional[str] = None  # Local invoices only; null on Cargo/Import invoices
     sgst: Optional[str] = None  # Local invoices only; null on Cargo/Import invoices
     line_items: List[LineItem] = Field(default_factory=list)

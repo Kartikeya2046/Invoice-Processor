@@ -1,0 +1,712 @@
+<html><head><title>Pipeline Diagnostic Report</title>
+<style>
+body { font-family: Arial, sans-serif; background: #f4f4f9; margin: 0; padding: 20px; }
+.header { background: #1e1e24; color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+.card { background: white; margin-bottom: 20px; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-left: 5px solid #ccc; }
+.pass { border-left-color: #28a745; }
+.fail { border-left-color: #dc3545; }
+.warn { border-left-color: #ffc107; }
+pre { background: #f8f9fa; padding: 15px; border-radius: 5px; overflow-x: auto; white-space: pre-wrap; font-size: 13px; }
+.badge { padding: 5px 10px; border-radius: 4px; font-weight: bold; color: white; display: inline-block; }
+.badge-pass { background: #28a745; }
+.badge-fail { background: #dc3545; }
+.diagnosis { background: #fff3cd; color: #856404; padding: 20px; border-radius: 8px; margin-top: 20px; }
+</style></head><body>
+<div class='header'>
+<h2>Pipeline Diagnostic Report</h2>
+<p>Timestamp: 2026-07-02T17:57:55.752318</p>
+<p>Test File: D:\Downloads\intern\assignment_1_frontend_backend\invoice-processor\uploads\0f303421-b530-4e14-ac01-248934ddc14a.pdf (104257 bytes)</p>
+<p>Python Version: 3.13.5 | packaged by Anaconda, Inc. | (main, Jun 12 2025, 16:37:03) [MSC v.1929 64 bit (AMD64)]</p>
+<p>Total Stages: 8 | PASS: 6 | FAIL: 2 | <strong>Status: PARTIAL</strong></p>
+</div>
+<div class='card fail'>
+<h3>Stage 1: Stage 1 - Dependency Check <span class='badge badge-fail'>FAIL</span></h3>
+<p>Time Taken: 2.69s</p>
+<pre>pdfplumber version: 0.11.9
+pdf2image version: unknown
+PIL version: 10.4.0
+surya version: unknown
+torch version: 2.11.0+cu128
+fastapi version: 0.136.3
+uvicorn version: 0.49.0
+httpx version: 0.27.2
+reportlab FAIL: No module named 'reportlab'
+GPU: NVIDIA GeForce RTX 3050 6GB Laptop GPU
+pdfinfo SUCCESS: ok</pre>
+</div>
+<div class='card pass'>
+<h3>Stage 2: Stage 2 - Embedded Text Extraction <span class='badge badge-pass'>PASS</span></h3>
+<p>Time Taken: 1.63s</p>
+<pre>Total pages: 16
+Character count per page: [3058, 2283, 2275, 2321, 2276, 2227, 2282, 2330, 2331, 2272, 2411, 2322, 2318, 2293, 2290, 1731]
+Total character count: 37035
+First 500 chars:
+Wire Transfer/TT To:
+Mouser Electronics, Inc. Original Invoice
+Bank Account: 6872262719
+JPMorgan Chase Bank NA, Hong Kong Inv # Dt. Page No.
+1000 North Main Street, Mansfield, TX 76063 Swift Code: CHASHKHH 74294838 21-JUN-23 1 of 16
+Customer Service Rep: Sushmita Dewangan BSB: 007-868
+Customer Service: +91 80-4265-0000 * Reference Number: 5429319
+Credit: +91-80-42650003 Purchase Order No. Master Tracker No.
+Federal ID# 61-1520598
+INCOTERMS: FCA Shipping Point 103565 4408466731
+Buyer Name Ship Vi
+Last 200 chars:
+acking Number(s) and Billed Weights
+This order is subject to all terms and conditions displayed at: http://www.mouser.in/saleterms/
+Please email us at apac.remit@mouser.com with wire transfer details.</pre>
+</div>
+<div class='card pass'>
+<h3>Stage 3: Stage 3 - Text Preprocessing <span class='badge badge-pass'>PASS</span></h3>
+<p>Time Taken: 0.01s</p>
+<pre>Before preprocessing: 37035 chars
+After preprocessing: 18703 chars
+Percentage reduction: 49.50%
+First 500 chars:
+Wire Transfer/TT To:
+Mouser Electronics, Inc. Original Invoice
+Bank Account: 6872262719
+JPMorgan Chase Bank NA, Hong Kong Inv # Dt. Page No.
+1000 North Main Street, Mansfield, TX 76063 Swift Code: CHASHKHH 74294838 21-JUN-23 1 of 16
+Customer Service Rep: Sushmita Dewangan BSB: 007-868
+Customer Service: +91 80-4265-0000 * Reference Number: 5429319
+Credit: +91-80-42650003 Purchase Order No. Master Tracker No.
+Federal ID# 61-1520598
+INCOTERMS: FCA Shipping Point 103565 4408466731
+Buyer Name Ship Vi
+Last 200 chars:
+Radial Leaded
+IN HS:85322200 ECCN:EAR99 COO:CN
+Merchandise Handling Freight TAX USD $2,484.05
+Please pay this amount
+2,464.05 0.00 20.00 0.00
+Shipping Information
+Tracking Number(s) and Billed Weights</pre>
+</div>
+<div class='card pass'>
+<h3>Stage 4: Stage 4 - Ollama Connectivity and Model Check <span class='badge badge-pass'>PASS</span></h3>
+<p>Time Taken: 5.37s</p>
+<pre>ollama list output:
+NAME          ID              SIZE      MODIFIED   
+qwen2.5:3b    357c53fb659c    1.9 GB    3 days ago    
+
+HTTP status: 200
+Response body: {"model":"qwen2.5:3b","created_at":"2026-07-02T12:27:51.4777088Z","response":"PONG","done":true,"done_reason":"stop","context":[151644,8948,198,2610,525,1207,16948,11,3465,553,54364,14817,13,1446,525,264,10950,17847,13,151645,198,151644,872,198,20841,448,279,3409,393,7539,323,4302,770,13,151645,198,151644,77091,198,47,7539],"total_duration":3278900200,"load_duration":3118565300,"prompt_eval_count":39,"prompt_eval_duration":101968000,"eval_count":3,"eval_duration":52813000}
+Time taken: 5.32s</pre>
+</div>
+<div class='card pass'>
+<h3>Stage 5: Stage 5 - LLM Extraction on Preprocessed Text <span class='badge badge-pass'>PASS</span></h3>
+<p>Time Taken: 0.01s</p>
+<pre>Raw JSON string returned (model dump):
+{"po_number":"74294838","supplier":"Mouser Electronics","invoice_number":"103565","invoice_date":"21-JUN-23","quantity":null,"unit_price":null,"cgst":null,"sgst":null,"line_items":[{"line_number":"1","product_id":"625-1N6276A-E3","quantity":"4","unit_price":"1.45"},{"line_number":"2","product_id":"512-LL4148","quantity":"72","unit_price":"0.109"},{"line_number":"3","product_id":"621-SMAJ5.0A-13-F","quantity":"10","unit_price":"0.297"},{"line_number":"6","product_id":"512-1N5231BTR","quantity":"10","unit_price":"0.156"},{"line_number":"7","product_id":"621-DZ9F3V3S92-7","quantity":"4","unit_price":"0.36"},{"line_number":"8","product_id":"873-SMV1237-001LF","quantity":"2","unit_price":"1.04"},{"line_number":"9","product_id":"576-0217005.MXBP","quantity":"2","unit_price":"1.16"},{"line_number":"11","product_id":"209-ECS100US28","quantity":"2","unit_price":"67.8"},{"line_number":"12","product_id":"926-LP38692MP3.3NOPB","quantity":"33","unit_price":"1.74"},{"line_number":"13","product_id":"844-IRFR9010PBF","quantity":"20","unit_price":"0.948"},{"line_number":"14","product_id":"700-MAX3491ESD","quantity":"25","unit_price":"5.64"},{"line_number":"15","product_id":"757-74HC245D","quantity":"2","unit_price":"0.6"},{"line_number":"16","product_id":"595-SN74HC573AN","quantity":"10","unit_price":"0.829"},{"line_number":"17","product_id":"584-AD5227BUJZ10-R2","quantity":"2","unit_price":"2.81"},{"line_number":"18","product_id":"584-AD7988-5BCPZ-R7","quantity":"8","unit_price":"18.89"},{"line_number":"19","product_id":"584-AD9957BSVZ","quantity":"4","unit_price":"55.06"},{"line_number":"20","product_id":"870-43LR16800G-6BLI","quantity":"4","unit_price":"5.53"},{"line_number":"21","product_id":"863-MC74LCX16244DTG","quantity":"4","unit_price":"1.79"},{"line_number":"22","product_id":"998-MIC37300-3.3WR","quantity":"3","unit_price":"2.71"},{"line_number":"23","product_id":"340-258056-REEL","quantity":"4","unit_price":"4.76"},{"line_number":"24","product_id":"595-SN74LVC2G07DBVR","quantity":"4","unit_price":"0.46"},{"line_number":"25","product_id":"595-TPS65251RHAR","quantity":"10","unit_price":"4.34"},{"line_number":"26","product_id":"595-TPS7A8001DRBR","quantity":"4","unit_price":"2.26"},{"line_number":"27","product_id":"595-TXB0108PWR","quantity":"12","unit_price":"1.55"},{"line_number":"28","product_id":"595-TXS0102DCUR","quantity":"4","unit_price":"0.96"},{"line_number":"29","product_id":"595-SN74HC74N","quantity":"2","unit_price":"1.03"},{"line_number":"31","product_id":"937-ETC1-1-13TR","quantity":"5","unit_price":"2.67"},{"line_number":"33","product_id":"942-IRFZ44NPBF","quantity":"4","unit_price":"0.72"},{"line_number":"34","product_id":"511-BD139","quantity":"12","unit_price":"0.577"},{"line_number":"36","product_id":"755-RB060MM-30TR","quantity":"10","unit_price":"0.349"},{"line_number":"37","product_id":"595-OPA2337UA/2K5","quantity":"0","unit_price":"1.22"},{"line_number":"38","product_id":"595-OPA4353UA","quantity":"0","unit_price":"7.41"},{"line_number":"39","product_id":"926-LMV221SD/NOPB","quantity":"0","unit_price":"4.24"},{"line_number":"40","product_id":"595-SN74LVC1G3157DBV","quantity":"12","unit_price":"0.339"},{"line_number":"41","product_id":"584-AD5689BRUZ","quantity":"5","unit_price":"11.82"},{"line_number":"42","product_id":"926-LM124J","quantity":"12","unit_price":"17.72"},{"line_number":"43","product_id":"994-1812SMS-22NGLC","quantity":"6","unit_price":"2.77"},{"line_number":"44","product_id":"994-0603CS-1N6XJLW","quantity":"4","unit_price":"0.96"},{"line_number":"45","product_id":"963-FBMH1608HM101-T","quantity":"1","unit_price":"0.16"},{"line_number":"46","product_id":"81-BLM11P300S","quantity":"28","unit_price":"0.063"},{"line_number":"47","product_id":"70-IHLP2020BZER4R7M1","quantity":"24","unit_price":"0.92"},{"line_number":"48","product_id":"926-38690DT-3.3/NOPB","quantity":"35","unit_price":"1.8"},{"line_number":"49","product_id":"581-100B102JW50XT","quantity":"10","unit_price":"8.57"},{"line_number":"50","product_id":"595-TLV2474AIPWP","quantity":"2","unit_price":"5.42"},{"line_number":"51","product_id":"81-BLM18KG331SN1D","quantity":"60","unit_price":"0.066"},{"line_number":"52","product_id":"667-ERJ-2RKF1001X","quantity":"700","unit_price":"0.008"},{"line_number":"53","product_id":"71-CRCW060322K0FKEAC","quantity":"7","unit_price":"0.1"},{"line_number":"54","product_id":"652-3296W-1-103","quantity":"40","unit_price":"3.26"},{"line_number":"55","product_id":"581-100A2R2DW150XT","quantity":"4","unit_price":"1.8"},{"line_number":"56","product_id":"581-100A4R7DW150XT","quantity":"4","unit_price":"1.91"},{"line_number":"57","product_id":"581-100A330JW","quantity":"1","unit_price":"2.86"},{"line_number":"58","product_id":"595-LM224D","quantity":"8","unit_price":"0.93"},{"line_number":"60","product_id":"78-TLHR4401-AS12Z","quantity":"70","unit_price":"0.335"},{"line_number":"61","product_id":"653-B3W-4050","quantity":"2","unit_price":"0.81"},{"line_number":"62","product_id":"81-LQH32MN220J23L","quantity":"30","unit_price":"0.222"},{"line_number":"63","product_id":"81-LQH32MN330J23L","quantity":"30","unit_price":"0.296"},{"line_number":"64","product_id":"576-0326030.HXP","quantity":"2","unit_price":"2.15"},{"line_number":"65","product_id":"523-RJFTV22G00","quantity":"6","unit_price":"58.43"},{"line_number":"66","product_id":"815-ABM3B-29.4912-T","quantity":"2","unit_price":"0.99"},{"line_number":"67","product_id":"994-0805CS-331XJLC","quantity":"3","unit_price":"0.84"},{"line_number":"68","product_id":"926-LP38692MP3.3NOPB","quantity":"4","unit_price":"2.05"},{"line_number":"71","product_id":"584-ADG1212YRUZ","quantity":"25","unit_price":"5.69"},{"line_number":"73","product_id":"810-C1608X7S2A104K","quantity":"10","unit_price":"0.111"},{"line_number":"74","product_id":"810-C1608X5R1A106M","quantity":"100","unit_price":"0.137"},{"line_number":"75","product_id":"81-GRM188R61C106MALD","quantity":"20","unit_price":"0.11"},{"line_number":"78","product_id":"581-06035C473KAZ2A","quantity":"10","unit_price":"0.118"},{"line_number":"79","product_id":"80-C1812C106M5R2AUTO","quantity":"15","unit_price":"3.94"},{"line_number":"80","product_id":"80-T495B106K25ATE750","quantity":"5","unit_price":"1.7"},{"line_number":"81","product_id":"595-TPS76901DBVR","quantity":"1","unit_price":"0.89"},{"line_number":"82","product_id":"994-0805CS-560XGLC","quantity":"100","unit_price":"0.994"},{"line_number":"83","product_id":"994-0805LS-102XGLC","quantity":"10","unit_price":"1.26"},{"line_number":"84","product_id":"71-CRCW0603-10-E3","quantity":"10","unit_price":"0.038"},{"line_number":"85","product_id":"603-RC0603FR-07110RL","quantity":"25","unit_price":"0.016"},{"line_number":"86","product_id":"71-CRCW0603-16K-E3","quantity":"45","unit_price":"0.042"},{"line_number":"87","product_id":"71-CRCW0603-680-E3","quantity":"10","unit_price":"0.042"},{"line_number":"88","product_id":"603-RP0603BRD0724K9L","quantity":"10","unit_price":"0.376"},{"line_number":"89","product_id":"603-RC0603FR-07330RL","quantity":"20","unit_price":"0.014"},{"line_number":"90","product_id":"603-RC0603FR-07330RL","quantity":"20","unit_price":"0.014"},{"line_number":"91","product_id":"603-RT0603BRE075KL","quantity":"10","unit_price":"0.289"},{"line_number":"92","product_id":"603-RC0603FR-0717K4L","quantity":"10","unit_price":"0.016"},{"line_number":"93","product_id":"667-ERJ-6ENF5100V","quantity":"10","unit_price":"0.047"},{"line_number":"94","product_id":"603-RC1206FR-070RL","quantity":"20","unit_price":"0.033"},{"line_number":"95","product_id":"603-RC1206JR-07100RL","quantity":"10","unit_price":"0.03"},{"line_number":"96","product_id":"652-3224W-1-104E","quantity":"5","unit_price":"4.66"},{"line_number":"97","product_id":"576-SMBJ24A","quantity":"5","unit_price":"0.39"},{"line_number":"98","product_id":"497-SC700208-1","quantity":"6","unit_price":"4.14"},{"line_number":"99","product_id":"645-598-8170-107F","quantity":"200","unit_price":"0.104"},{"line_number":"100","product_id":"645-607-1112-310F","quantity":"1","unit_price":"6.9"},{"line_number":"101","product_id":"595-TL072IDR","quantity":"10","unit_price":"0.374"},{"line_number":"102","product_id":"595-TPS65920A2ZCHR","quantity":"4","unit_price":"10.54"},{"line_number":"103","product_id":"595-SN74HC244DWR","quantity":"12","unit_price":"0.525"},{"line_number":"104","product_id":"80-ESC107M035AE3AA","quantity":"6","unit_price":"0.35"}]}
+Valid JSON: True
+Extraction Time: 0.00s
+invoice_number: 103565 (expected ~ 103565)
+po_number: 74294838 (expected ~ 74294838)
+supplier: Mouser Electronics (expected ~ Mouser)
+invoice_date: 21-JUN-23 (expected ~ 21-JUN-23)
+line_items count: 92 (expected > 10)
+
+First 5 line items:
+  1: line_number=1, product_id=625-1N6276A-E3, qty=4, price=1.45
+  2: line_number=2, product_id=512-LL4148, qty=72, price=0.109
+  3: line_number=3, product_id=621-SMAJ5.0A-13-F, qty=10, price=0.297
+  4: line_number=6, product_id=512-1N5231BTR, qty=10, price=0.156
+  5: line_number=7, product_id=621-DZ9F3V3S92-7, qty=4, price=0.36</pre>
+</div>
+<div class='card fail'>
+<h3>Stage 6: Stage 6 - Validation Layer <span class='badge badge-fail'>FAIL</span></h3>
+<p>Time Taken: 0.00s</p>
+<pre>
+FAIL: Did not see GOOD or >= 3 PASS lines.</pre>
+</div>
+<div class='card pass'>
+<h3>Stage 7: Stage 7 - process_file() Full OCR Path <span class='badge badge-pass'>PASS</span></h3>
+<p>Time Taken: 2.70s</p>
+<pre>Time taken: 1.72s
+Character count: 37035
+First 300 chars:
+Wire Transfer/TT To:
+Mouser Electronics, Inc. Original Invoice
+Bank Account: 6872262719
+JPMorgan Chase Bank NA, Hong Kong Inv # Dt. Page No.
+1000 North Main Street, Mansfield, TX 76063 Swift Code: CHASHKHH 74294838 21-JUN-23 1 of 16
+Customer Service Rep: Sushmita Dewangan BSB: 007-868
+Customer Servi</pre>
+</div>
+<div class='card pass'>
+<h3>Stage 8: Stage 8 - End to End <span class='badge badge-pass'>PASS</span></h3>
+<p>Time Taken: 1.57s</p>
+<pre>Total time combined: 1.57s
+Final JSON result:
+{
+  "po_number": "74294838",
+  "supplier": "Mouser Electronics",
+  "invoice_number": "103565",
+  "invoice_date": "21-JUN-23",
+  "quantity": null,
+  "unit_price": null,
+  "cgst": null,
+  "sgst": null,
+  "line_items": [
+    {
+      "line_number": "1",
+      "product_id": "625-1N6276A-E3",
+      "quantity": "4",
+      "unit_price": "1.45"
+    },
+    {
+      "line_number": "2",
+      "product_id": "512-LL4148",
+      "quantity": "72",
+      "unit_price": "0.109"
+    },
+    {
+      "line_number": "3",
+      "product_id": "621-SMAJ5.0A-13-F",
+      "quantity": "10",
+      "unit_price": "0.297"
+    },
+    {
+      "line_number": "6",
+      "product_id": "512-1N5231BTR",
+      "quantity": "10",
+      "unit_price": "0.156"
+    },
+    {
+      "line_number": "7",
+      "product_id": "621-DZ9F3V3S92-7",
+      "quantity": "4",
+      "unit_price": "0.36"
+    },
+    {
+      "line_number": "8",
+      "product_id": "873-SMV1237-001LF",
+      "quantity": "2",
+      "unit_price": "1.04"
+    },
+    {
+      "line_number": "9",
+      "product_id": "576-0217005.MXBP",
+      "quantity": "2",
+      "unit_price": "1.16"
+    },
+    {
+      "line_number": "11",
+      "product_id": "209-ECS100US28",
+      "quantity": "2",
+      "unit_price": "67.8"
+    },
+    {
+      "line_number": "12",
+      "product_id": "926-LP38692MP3.3NOPB",
+      "quantity": "33",
+      "unit_price": "1.74"
+    },
+    {
+      "line_number": "13",
+      "product_id": "844-IRFR9010PBF",
+      "quantity": "20",
+      "unit_price": "0.948"
+    },
+    {
+      "line_number": "14",
+      "product_id": "700-MAX3491ESD",
+      "quantity": "25",
+      "unit_price": "5.64"
+    },
+    {
+      "line_number": "15",
+      "product_id": "757-74HC245D",
+      "quantity": "2",
+      "unit_price": "0.6"
+    },
+    {
+      "line_number": "16",
+      "product_id": "595-SN74HC573AN",
+      "quantity": "10",
+      "unit_price": "0.829"
+    },
+    {
+      "line_number": "17",
+      "product_id": "584-AD5227BUJZ10-R2",
+      "quantity": "2",
+      "unit_price": "2.81"
+    },
+    {
+      "line_number": "18",
+      "product_id": "584-AD7988-5BCPZ-R7",
+      "quantity": "8",
+      "unit_price": "18.89"
+    },
+    {
+      "line_number": "19",
+      "product_id": "584-AD9957BSVZ",
+      "quantity": "4",
+      "unit_price": "55.06"
+    },
+    {
+      "line_number": "20",
+      "product_id": "870-43LR16800G-6BLI",
+      "quantity": "4",
+      "unit_price": "5.53"
+    },
+    {
+      "line_number": "21",
+      "product_id": "863-MC74LCX16244DTG",
+      "quantity": "4",
+      "unit_price": "1.79"
+    },
+    {
+      "line_number": "22",
+      "product_id": "998-MIC37300-3.3WR",
+      "quantity": "3",
+      "unit_price": "2.71"
+    },
+    {
+      "line_number": "23",
+      "product_id": "340-258056-REEL",
+      "quantity": "4",
+      "unit_price": "4.76"
+    },
+    {
+      "line_number": "24",
+      "product_id": "595-SN74LVC2G07DBVR",
+      "quantity": "4",
+      "unit_price": "0.46"
+    },
+    {
+      "line_number": "25",
+      "product_id": "595-TPS65251RHAR",
+      "quantity": "10",
+      "unit_price": "4.34"
+    },
+    {
+      "line_number": "26",
+      "product_id": "595-TPS7A8001DRBR",
+      "quantity": "4",
+      "unit_price": "2.26"
+    },
+    {
+      "line_number": "27",
+      "product_id": "595-TXB0108PWR",
+      "quantity": "12",
+      "unit_price": "1.55"
+    },
+    {
+      "line_number": "28",
+      "product_id": "595-TXS0102DCUR",
+      "quantity": "4",
+      "unit_price": "0.96"
+    },
+    {
+      "line_number": "29",
+      "product_id": "595-SN74HC74N",
+      "quantity": "2",
+      "unit_price": "1.03"
+    },
+    {
+      "line_number": "31",
+      "product_id": "937-ETC1-1-13TR",
+      "quantity": "5",
+      "unit_price": "2.67"
+    },
+    {
+      "line_number": "33",
+      "product_id": "942-IRFZ44NPBF",
+      "quantity": "4",
+      "unit_price": "0.72"
+    },
+    {
+      "line_number": "34",
+      "product_id": "511-BD139",
+      "quantity": "12",
+      "unit_price": "0.577"
+    },
+    {
+      "line_number": "36",
+      "product_id": "755-RB060MM-30TR",
+      "quantity": "10",
+      "unit_price": "0.349"
+    },
+    {
+      "line_number": "37",
+      "product_id": "595-OPA2337UA/2K5",
+      "quantity": "0",
+      "unit_price": "1.22"
+    },
+    {
+      "line_number": "38",
+      "product_id": "595-OPA4353UA",
+      "quantity": "0",
+      "unit_price": "7.41"
+    },
+    {
+      "line_number": "39",
+      "product_id": "926-LMV221SD/NOPB",
+      "quantity": "0",
+      "unit_price": "4.24"
+    },
+    {
+      "line_number": "40",
+      "product_id": "595-SN74LVC1G3157DBV",
+      "quantity": "12",
+      "unit_price": "0.339"
+    },
+    {
+      "line_number": "41",
+      "product_id": "584-AD5689BRUZ",
+      "quantity": "5",
+      "unit_price": "11.82"
+    },
+    {
+      "line_number": "42",
+      "product_id": "926-LM124J",
+      "quantity": "12",
+      "unit_price": "17.72"
+    },
+    {
+      "line_number": "43",
+      "product_id": "994-1812SMS-22NGLC",
+      "quantity": "6",
+      "unit_price": "2.77"
+    },
+    {
+      "line_number": "44",
+      "product_id": "994-0603CS-1N6XJLW",
+      "quantity": "4",
+      "unit_price": "0.96"
+    },
+    {
+      "line_number": "45",
+      "product_id": "963-FBMH1608HM101-T",
+      "quantity": "1",
+      "unit_price": "0.16"
+    },
+    {
+      "line_number": "46",
+      "product_id": "81-BLM11P300S",
+      "quantity": "28",
+      "unit_price": "0.063"
+    },
+    {
+      "line_number": "47",
+      "product_id": "70-IHLP2020BZER4R7M1",
+      "quantity": "24",
+      "unit_price": "0.92"
+    },
+    {
+      "line_number": "48",
+      "product_id": "926-38690DT-3.3/NOPB",
+      "quantity": "35",
+      "unit_price": "1.8"
+    },
+    {
+      "line_number": "49",
+      "product_id": "581-100B102JW50XT",
+      "quantity": "10",
+      "unit_price": "8.57"
+    },
+    {
+      "line_number": "50",
+      "product_id": "595-TLV2474AIPWP",
+      "quantity": "2",
+      "unit_price": "5.42"
+    },
+    {
+      "line_number": "51",
+      "product_id": "81-BLM18KG331SN1D",
+      "quantity": "60",
+      "unit_price": "0.066"
+    },
+    {
+      "line_number": "52",
+      "product_id": "667-ERJ-2RKF1001X",
+      "quantity": "700",
+      "unit_price": "0.008"
+    },
+    {
+      "line_number": "53",
+      "product_id": "71-CRCW060322K0FKEAC",
+      "quantity": "7",
+      "unit_price": "0.1"
+    },
+    {
+      "line_number": "54",
+      "product_id": "652-3296W-1-103",
+      "quantity": "40",
+      "unit_price": "3.26"
+    },
+    {
+      "line_number": "55",
+      "product_id": "581-100A2R2DW150XT",
+      "quantity": "4",
+      "unit_price": "1.8"
+    },
+    {
+      "line_number": "56",
+      "product_id": "581-100A4R7DW150XT",
+      "quantity": "4",
+      "unit_price": "1.91"
+    },
+    {
+      "line_number": "57",
+      "product_id": "581-100A330JW",
+      "quantity": "1",
+      "unit_price": "2.86"
+    },
+    {
+      "line_number": "58",
+      "product_id": "595-LM224D",
+      "quantity": "8",
+      "unit_price": "0.93"
+    },
+    {
+      "line_number": "60",
+      "product_id": "78-TLHR4401-AS12Z",
+      "quantity": "70",
+      "unit_price": "0.335"
+    },
+    {
+      "line_number": "61",
+      "product_id": "653-B3W-4050",
+      "quantity": "2",
+      "unit_price": "0.81"
+    },
+    {
+      "line_number": "62",
+      "product_id": "81-LQH32MN220J23L",
+      "quantity": "30",
+      "unit_price": "0.222"
+    },
+    {
+      "line_number": "63",
+      "product_id": "81-LQH32MN330J23L",
+      "quantity": "30",
+      "unit_price": "0.296"
+    },
+    {
+      "line_number": "64",
+      "product_id": "576-0326030.HXP",
+      "quantity": "2",
+      "unit_price": "2.15"
+    },
+    {
+      "line_number": "65",
+      "product_id": "523-RJFTV22G00",
+      "quantity": "6",
+      "unit_price": "58.43"
+    },
+    {
+      "line_number": "66",
+      "product_id": "815-ABM3B-29.4912-T",
+      "quantity": "2",
+      "unit_price": "0.99"
+    },
+    {
+      "line_number": "67",
+      "product_id": "994-0805CS-331XJLC",
+      "quantity": "3",
+      "unit_price": "0.84"
+    },
+    {
+      "line_number": "68",
+      "product_id": "926-LP38692MP3.3NOPB",
+      "quantity": "4",
+      "unit_price": "2.05"
+    },
+    {
+      "line_number": "71",
+      "product_id": "584-ADG1212YRUZ",
+      "quantity": "25",
+      "unit_price": "5.69"
+    },
+    {
+      "line_number": "73",
+      "product_id": "810-C1608X7S2A104K",
+      "quantity": "10",
+      "unit_price": "0.111"
+    },
+    {
+      "line_number": "74",
+      "product_id": "810-C1608X5R1A106M",
+      "quantity": "100",
+      "unit_price": "0.137"
+    },
+    {
+      "line_number": "75",
+      "product_id": "81-GRM188R61C106MALD",
+      "quantity": "20",
+      "unit_price": "0.11"
+    },
+    {
+      "line_number": "78",
+      "product_id": "581-06035C473KAZ2A",
+      "quantity": "10",
+      "unit_price": "0.118"
+    },
+    {
+      "line_number": "79",
+      "product_id": "80-C1812C106M5R2AUTO",
+      "quantity": "15",
+      "unit_price": "3.94"
+    },
+    {
+      "line_number": "80",
+      "product_id": "80-T495B106K25ATE750",
+      "quantity": "5",
+      "unit_price": "1.7"
+    },
+    {
+      "line_number": "81",
+      "product_id": "595-TPS76901DBVR",
+      "quantity": "1",
+      "unit_price": "0.89"
+    },
+    {
+      "line_number": "82",
+      "product_id": "994-0805CS-560XGLC",
+      "quantity": "100",
+      "unit_price": "0.994"
+    },
+    {
+      "line_number": "83",
+      "product_id": "994-0805LS-102XGLC",
+      "quantity": "10",
+      "unit_price": "1.26"
+    },
+    {
+      "line_number": "84",
+      "product_id": "71-CRCW0603-10-E3",
+      "quantity": "10",
+      "unit_price": "0.038"
+    },
+    {
+      "line_number": "85",
+      "product_id": "603-RC0603FR-07110RL",
+      "quantity": "25",
+      "unit_price": "0.016"
+    },
+    {
+      "line_number": "86",
+      "product_id": "71-CRCW0603-16K-E3",
+      "quantity": "45",
+      "unit_price": "0.042"
+    },
+    {
+      "line_number": "87",
+      "product_id": "71-CRCW0603-680-E3",
+      "quantity": "10",
+      "unit_price": "0.042"
+    },
+    {
+      "line_number": "88",
+      "product_id": "603-RP0603BRD0724K9L",
+      "quantity": "10",
+      "unit_price": "0.376"
+    },
+    {
+      "line_number": "89",
+      "product_id": "603-RC0603FR-07330RL",
+      "quantity": "20",
+      "unit_price": "0.014"
+    },
+    {
+      "line_number": "90",
+      "product_id": "603-RC0603FR-07330RL",
+      "quantity": "20",
+      "unit_price": "0.014"
+    },
+    {
+      "line_number": "91",
+      "product_id": "603-RT0603BRE075KL",
+      "quantity": "10",
+      "unit_price": "0.289"
+    },
+    {
+      "line_number": "92",
+      "product_id": "603-RC0603FR-0717K4L",
+      "quantity": "10",
+      "unit_price": "0.016"
+    },
+    {
+      "line_number": "93",
+      "product_id": "667-ERJ-6ENF5100V",
+      "quantity": "10",
+      "unit_price": "0.047"
+    },
+    {
+      "line_number": "94",
+      "product_id": "603-RC1206FR-070RL",
+      "quantity": "20",
+      "unit_price": "0.033"
+    },
+    {
+      "line_number": "95",
+      "product_id": "603-RC1206JR-07100RL",
+      "quantity": "10",
+      "unit_price": "0.03"
+    },
+    {
+      "line_number": "96",
+      "product_id": "652-3224W-1-104E",
+      "quantity": "5",
+      "unit_price": "4.66"
+    },
+    {
+      "line_number": "97",
+      "product_id": "576-SMBJ24A",
+      "quantity": "5",
+      "unit_price": "0.39"
+    },
+    {
+      "line_number": "98",
+      "product_id": "497-SC700208-1",
+      "quantity": "6",
+      "unit_price": "4.14"
+    },
+    {
+      "line_number": "99",
+      "product_id": "645-598-8170-107F",
+      "quantity": "200",
+      "unit_price": "0.104"
+    },
+    {
+      "line_number": "100",
+      "product_id": "645-607-1112-310F",
+      "quantity": "1",
+      "unit_price": "6.9"
+    },
+    {
+      "line_number": "101",
+      "product_id": "595-TL072IDR",
+      "quantity": "10",
+      "unit_price": "0.374"
+    },
+    {
+      "line_number": "102",
+      "product_id": "595-TPS65920A2ZCHR",
+      "quantity": "4",
+      "unit_price": "10.54"
+    },
+    {
+      "line_number": "103",
+      "product_id": "595-SN74HC244DWR",
+      "quantity": "12",
+      "unit_price": "0.525"
+    },
+    {
+      "line_number": "104",
+      "product_id": "80-ESC107M035AE3AA",
+      "quantity": "6",
+      "unit_price": "0.35"
+    }
+  ]
+}</pre>
+</div>
+<div class='diagnosis'><h3>DIAGNOSIS & SUGGESTED FIXES</h3><ul>
+<li><strong>Stage 1 - Dependency Check:</strong> Missing dependency: install the failed package via pip</li>
+<li><strong>Stage 6 - Validation Layer:</strong> Validation layer missing or all fields failing: check prompt tuning and field definitions in llm_extractor.py</li>
+</ul></div>
+</body></html>
