@@ -70,8 +70,9 @@ def _call_ollama(prompt: str, schema: dict) -> dict:
 _INVOICE_PROMPT = """You are a strict invoice data extraction engine. Extract structured fields from the invoice text and return a valid JSON object. No explanation, no markdown, no text outside the JSON.
 
 FIELDS:
-- invoice_number: Unique invoice ID after labels like "Invoice No.", "Invoice #", "INV#", "No.:". Can be numeric or alphanumeric. Never use an address or date.
-- po_number: Purchase order number(s) after labels like "PO:", "P.O. No.", "Purchase Order No.", or inside a Remarks block. If multiple POs exist, return them all comma-separated. Never use a street address, city, or postal code as the PO number — a PO number is a short numeric or alphanumeric code, not a location.
+- invoice_number: The invoice's own identifying number, found after labels like "Invoice No.", "Invoice #", "Inv #", "INV#". This is DIFFERENT from Purchase Order Number and Customer Number, which are separate fields on the same document — do not confuse them even if they appear in adjacent boxes or columns.
+- po_number: The purchase order number the CUSTOMER issued to place this order, found after "PO:", "P.O. No.", "Purchase Order No.". This is NOT the invoice's own number, and NOT the "Customer No." field (which is a separate account/customer identifier, not an order reference) — do not substitute one for the other.
+- customer_number: The customer's account/reference number with the supplier, found after "Customer No.", "Customer #", "Account No.". This is a separate field from po_number — do not merge them.
 - supplier: Name of the company that issued this invoice. Found in the header under "Seller", "Seller / Exporter", "Sold By", "From", or as the company name at the top. Never use the buyer or consignee name. Never use a bank name (e.g. containing 'Bank', 'NA', 'Chase', 'HSBC') or a wire-transfer/remittance block as the supplier — the supplier is the company that issued and is billing for the invoice, usually named at the very top of the document or near 'Sold By'/'From'.
 - invoice_date: Date the invoice was issued. Found after "Invoice Date:", "Date:", "Inv Dt.". Return exactly as it appears in the document.
 - line_items: Array of every product row in the line items table. For each row extract:
@@ -107,6 +108,7 @@ WIDGET-B     30        2.75
 
 RULES:
 - If a field is not found, return null. Never guess or hallucinate.
+- Invoice documents commonly show several short numeric ID fields side by side (Invoice No., Purchase Order No., Customer No., Master Tracker No., Account No.). Match each strictly to its own printed label — never assume positional order, and never substitute one ID field for another just because both are unlabeled-looking numbers.
 - Do not put addresses, bank details, or descriptions into any field.
 - Bank details, wire transfer instructions, and remittance addresses are NEVER a valid value for any field except when explicitly extracting banking information (which this schema does not request).
 - Return numbers as plain digits only — no currency symbols, no angle brackets, no surrounding punctuation of any kind.
@@ -305,10 +307,11 @@ def extract_invoice_fields(raw_text: str) -> ExtractedInvoiceData:
         "properties": {
             "invoice_number": {"type": "string"},
             "po_number":      {"type": "string"},
+            "customer_number":{"type": "string"},
             "supplier":       {"type": "string"},
             "invoice_date":   {"type": "string"}
         },
-        "required": ["invoice_number", "po_number", "supplier", "invoice_date"]
+        "required": ["invoice_number", "po_number", "customer_number", "supplier", "invoice_date"]
     }
 
     hints_text = _extract_universal_hints(header_text_slice)
@@ -420,6 +423,7 @@ def extract_invoice_fields(raw_text: str) -> ExtractedInvoiceData:
     result = {
         "invoice_number": header_result.get("invoice_number"),
         "po_number":      header_result.get("po_number"),
+        "customer_number":header_result.get("customer_number"),
         "invoice_date":   header_result.get("invoice_date"),
         "supplier":       header_result.get("supplier"),
         "total_amount":   None,  # not in schema yet
@@ -427,13 +431,14 @@ def extract_invoice_fields(raw_text: str) -> ExtractedInvoiceData:
     }
 
     # Coerce non-null header fields to strings
-    for key in ["invoice_number", "po_number", "invoice_date", "supplier"]:
+    for key in ["invoice_number", "po_number", "customer_number", "invoice_date", "supplier"]:
         if result[key] is not None:
             result[key] = str(result[key])
 
     logger.info(
         f"Final extraction — invoice_number={result['invoice_number']}, "
-        f"po_number={result['po_number']}, supplier={result['supplier']}, "
+        f"po_number={result['po_number']}, customer_number={result['customer_number']}, "
+        f"supplier={result['supplier']}, "
         f"invoice_date={result['invoice_date']}, line_items={len(formatted_items)}"
     )
 

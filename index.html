@@ -329,7 +329,10 @@
           <div class="title" id="selectedTitle">Select an invoice</div>
           <div class="invoice-meta" id="selectedMeta">No invoice selected</div>
         </div>
-        <input class="search-input" id="searchInput" placeholder="Search inside text..." style="display:none;" />
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <input class="search-input" id="searchInput" placeholder="Search inside text..." style="display:none;" />
+          <button id="copyJsonBtn" class="ghost" style="display:none;">Copy JSON</button>
+        </div>
       </div>
       <div id="tabContentRaw">
         <div class="text-area" id="textArea" style="display:none;">Upload or select an invoice to view text.</div>
@@ -353,6 +356,7 @@
   </div>
 
   <input type="file" id="fileInput" multiple hidden />
+  <input type="file" id="folderInput" webkitdirectory directory multiple style="display:none;" />
 
   <script>
     // UPDATE THIS TO YOUR BACKEND DEPLOYMENT URL
@@ -375,6 +379,7 @@
     const searchInputEl = document.getElementById("searchInput");
     const matchCountEl = document.getElementById("matchCount");
     const charCountEl = document.getElementById("charCount");
+    const copyJsonBtn = document.getElementById("copyJsonBtn");
 
     let invoices = [];
     let selectedInvoice = null;
@@ -450,6 +455,7 @@
         textAreaEl.textContent = "Upload or select an invoice to view text.";
         updateStats("", "");
         if (jsonBlock) { jsonBlock.textContent = "Select an invoice to view extracted fields."; jsonBlock.style.color = "#94a3b8"; }
+        copyJsonBtn.style.display = "none";
         return;
       }
 
@@ -466,6 +472,7 @@
       if (jsonBlock) {
         const fields = isBOE ? selectedInvoice?.extracted_boe_fields : selectedInvoice?.extracted_fields;
         if (fields && typeof fields === "object") {
+          copyJsonBtn.style.display = "inline-block";
           const DISPLAY_FIELDS = isBOE
             ? ["boe_number", "boe_date", "igst", "cust_duty", "sbcess"]
             : ["invoice_number", "invoice_date", "po_number", "supplier", "quantity", "unit_price", "cgst", "sgst"];
@@ -482,9 +489,11 @@
         } else if (selectedInvoice?.processing_status === "failed") {
           jsonBlock.textContent = "Extraction failed — " + (selectedInvoice.extraction_error || "unknown error");
           jsonBlock.style.color = "#b91c1c";
+          copyJsonBtn.style.display = "none";
         } else {
           jsonBlock.textContent = "No structured data yet.";
           jsonBlock.style.color = "#94a3b8";
+          copyJsonBtn.style.display = "none";
         }
       }
 
@@ -643,35 +652,19 @@
       await fetchInvoices();
     };
 
-    const uploadFolder = async () => {
-      const folderPath = window.prompt("Enter a folder path on the server machine:");
-      if (!folderPath) {
-        return;
-      }
-
-      setStatus("Processing folder...", true);
-
-      try {
-        const response = await fetch(`${API_BASE}/upload-folder/${encodeURIComponent(folderPath)}`, {
-          method: "POST",
-        });
-        const result = await response.json();
-        if (!response.ok) {
-          throw new Error(result.detail || "Folder upload failed");
-        }
-        setStatus(`Processed ${result.processed_count} of ${result.total_files} files`);
-        await fetchInvoices();
-      } catch (error) {
-        setStatus(`Error: ${error.message}`);
-      }
-    };
-
     dropZone.addEventListener("click", () => fileInput.click());
     document.getElementById("uploadFilesBtn").addEventListener("click", () => fileInput.click());
-    document.getElementById("uploadFolderBtn").addEventListener("click", uploadFolder);
+    document.getElementById("uploadFolderBtn").addEventListener("click", () => {
+      document.getElementById("folderInput").click();
+    });
     document.getElementById("refreshBtn").addEventListener("click", fetchInvoices);
 
     fileInput.addEventListener("change", (event) => uploadFiles(event.target.files));
+    document.getElementById("folderInput").addEventListener("change", (event) => {
+      const files = Array.from(event.target.files);
+      if (files.length === 0) return;
+      uploadFiles(files);
+    });
 
     dropZone.addEventListener("dragover", (event) => {
       event.preventDefault();
@@ -698,6 +691,34 @@
         setStatus("Text copied to clipboard");
       } catch (error) {
         setStatus("Copy failed");
+      }
+    });
+
+    copyJsonBtn.addEventListener("click", async () => {
+      if (!selectedInvoice) return;
+      
+      const isBOE = selectedInvoice.document_type === "bill_of_entry";
+      const fields = isBOE ? selectedInvoice.extracted_boe_fields : selectedInvoice.extracted_fields;
+      if (!fields || typeof fields !== "object") return;
+
+      const DISPLAY_FIELDS = isBOE
+        ? ["boe_number", "boe_date", "igst", "cust_duty", "sbcess"]
+        : ["invoice_number", "invoice_date", "po_number", "supplier", "quantity", "unit_price", "cgst", "sgst"];
+      
+      const cleanData = {};
+      DISPLAY_FIELDS.forEach(k => {
+        if (fields[k] !== undefined) cleanData[k] = fields[k];
+        else if (!isBOE && (k === "cgst" || k === "sgst")) cleanData[k] = null;
+      });
+      
+      if (fields.line_items) cleanData.line_items = fields.line_items;
+
+      try {
+        await navigator.clipboard.writeText(JSON.stringify(cleanData, null, 2));
+        copyJsonBtn.textContent = "Copied!";
+        setTimeout(() => { copyJsonBtn.textContent = "Copy JSON"; }, 1500);
+      } catch (error) {
+        alert("Failed to copy JSON to clipboard: " + error.message);
       }
     });
 

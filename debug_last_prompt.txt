@@ -26,21 +26,21 @@ RULES:
 - Ignore description/text columns entirely — never place a description into product_id.
 
 DOCUMENT TEXT:
-
-Texas Instruments Int Pwr Mgmt IC / Power Management Specialised - PMIC
-IN HS:85423900 ECCN:5A991.g COO:PH
-
-JPMorgan Chase Bank NA, Hong Kong Invoice No. Invoice Date Page No.
-1000 North Main Street, Mansfield, TX 76063 Swift Code: CHASHKHH 74294838 21-JUN-23 16 of 16
-Line Customer/MFG Part No. Quantity Quantity Quantity Unit Price Extended Price
-103 595-SN74HC244DWR 12 12 0 0.525 6.30
-MFG Part No: SN74HC244DWR
-Texas Instruments Tri-State Octal / Buffers & Line Drivers
-IN HS:85423900 ECCN:EAR99 COO:CN
-104 80-ESC107M035AE3AA 6 6 0 0.350 2.10
-MFG Part No: ESC107M035AE3AA
-KEMET 35V 100uF 105C 2k Ho / Aluminium Electrolytic Capacitors - Radial Leaded
-IN HS:85322200 ECCN:EAR99 COO:CN
-Merchandise Handling Freight TAX USD $2,484.05
-Please pay this amount
-2,464.05 0.00 20.00 0.00
+Invoice INV-2026-002
+Invoice Date: 2026-01-12
+Due Date: 2026-02-11
+Vendor Name: CloudServe Technologies
+Vendor Address: 101 MG Road, Bengaluru, Karnataka 560001
+Vendor Email: accounts@cloudserve.io
+Vendor Phone: +91-9988776655
+Customer Name: Global Retail Corp
+Billing Address: Andheri East, Mumbai, Maharashtra 400093
+Shipping Address: Andheri East, Mumbai, Maharashtra 400093
+PO Number: PO-78234
+Payment Terms: Net 30
+Currency: USD
+Subtotal: 1250.00
+Tax Amount: 225.00
+Tax Rate: 18%
+Discount Amount: 50.00
+Grand Total: 1425.00

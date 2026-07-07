@@ -104,7 +104,7 @@ def classify_document(cleaned_text: str) -> dict:
     }
 
     if best_score == 0:
-        return {'type': 'invoice', 'confidence': 0.3, 'matched_keywords': 0}
+        return {'type': 'unknown', 'confidence': 0.0, 'matched_keywords': 0}
 
     confidence = min(best_score / 4, 1.0)
 

@@ -40,12 +40,12 @@ else:
 # fails fast instead of wedging every future request on this process for
 # good (confirmed: a tiny PNG hung 11+ min after an earlier request never
 # returned -- same shared _recognition_predictor serves all requests).
-# Ceiling: this only makes the HTTP request fail cleanly; it does NOT
-# recover the shared predictor itself, which may still be wedged internally
-# after a timeout, so subsequent calls could keep failing until restart.
-# Upgrade path: recreate _manager/_recognition_predictor after a timeout
-# instead of reusing the same (possibly broken) instance.
-_OCR_TIMEOUT = 120.0
+# Ceiling: this makes the HTTP request fail cleanly after 30 seconds.
+# See Recovery note below for what happens to the shared predictor.
+# Recovery: the except block below (FutureTimeoutError) rebuilds
+# _manager/_recognition_predictor after a timeout, so a wedged
+# predictor should not persist across requests.
+_OCR_TIMEOUT = 30.0
 _ocr_executor = ThreadPoolExecutor(max_workers=1)
 
 

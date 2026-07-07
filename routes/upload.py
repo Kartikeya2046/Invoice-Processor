@@ -65,6 +65,14 @@ async def upload_file(file: UploadFile = File(...)):
         else:
             text_for_llm = clean_ocr_text(raw_text)
 
+        OCR_FAILURE_MARKERS = ["OCR FAILED", "timed out"]
+        if any(marker in text_for_llm for marker in OCR_FAILURE_MARKERS) or len(text_for_llm.strip()) < 20:
+            return {
+                "document_type": "unknown",
+                "message": "This file could not be read — it may be a corrupted, blank, or non-document image.",
+                "extracted_fields": None
+            }
+
         classification = classify_document(text_for_llm)
 
         doc_type = classification.get("type")
