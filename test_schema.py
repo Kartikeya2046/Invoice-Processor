@@ -4,7 +4,7 @@ from models import ExtractedInvoiceData
 schema = ExtractedInvoiceData.model_json_schema()
 
 res = requests.post('http://localhost:11434/api/chat', json={
-    'model': 'qwen2.5:3b',
+    'model': 'qwen2.5:7b',
     'messages': [{'role': 'user', 'content': 'test'}],
     'format': schema
 })

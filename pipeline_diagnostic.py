@@ -222,12 +222,12 @@ def cp5_ollama():
         out = subprocess.check_output(['ollama', 'list'], stderr=subprocess.STDOUT)
         out_str = out.decode('utf-8', errors='ignore')
         print(out_str)
-        if 'qwen2.5:3b' not in out_str:
-            print("WARNING: qwen2.5:3b model not found in `ollama list`")
+        if 'qwen2.5:7b' not in out_str:
+            print("WARNING: qwen2.5:7b model not found in `ollama list`")
             
         print("Sending POST request to http://localhost:11434/api/generate ...")
         payload = {
-            "model": "qwen2.5:3b",
+            "model": "qwen2.5:7b",
             "prompt": "Reply with the word PONG and nothing else",
             "stream": False
         }
@@ -368,7 +368,7 @@ def print_summary():
             elif "CHECKPOINT 4" in r[0]:
                 print("- Surya OCR failed or timed out. Check CUDA/GPU availability, or if Surya is wedged, restart the server.")
             elif "CHECKPOINT 5" in r[0]:
-                print("- Ollama LLM is unreachable or timing out. Check if `ollama serve` is running and the model qwen2.5:3b is pulled.")
+                print("- Ollama LLM is unreachable or timing out. Check if `ollama serve` is running and the model qwen2.5:7b is pulled.")
             elif "CHECKPOINT 6" in r[0]:
                 print("- LLM Extraction failed on raw text. Check llm_extractor.py logic and the prompt format.")
             elif "CHECKPOINT 7" in r[0]:

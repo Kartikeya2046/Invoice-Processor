@@ -1,0 +1,46 @@
+You are a strict invoice data extraction engine. Extract ONLY line items from the invoice text chunk and return a valid JSON object. No explanation, no markdown, no text outside the JSON.
+
+FIELDS:
+- line_items: Array of every product row in the line items table. For each row extract:
+    - line_number: Row sequence number. If not printed, number them yourself starting from 1.
+    - product_id: The product code, part number, model number, or SKU. Never use a prose description.
+    - quantity: Integer quantity only — no decimals, no fractional units. Example: 10, not 10.0 or 10.5.
+    - unit_price: Price per single unit. This is NOT the extended price or Amount column. No currency symbols, no commas.
+
+EXAMPLES:
+Example A (Qty before Part Number):
+Qty  Part No.       Unit Price
+10   ABC-123-XY     4.50
+5    DEF-456-Z      12.00
+->
+[{"line_number": "1", "product_id": "ABC-123-XY", "quantity": "10", "unit_price": "4.50"},
+ {"line_number": "2", "product_id": "DEF-456-Z", "quantity": "5", "unit_price": "12.00"}]
+
+RULES:
+- If a field is not found, return null. Never guess or hallucinate.
+- Return numbers as plain digits only — no currency symbols, no angle brackets, no surrounding punctuation of any kind.
+- unit_price x quantity should equal the line Amount — use the smaller per-unit value, not the total.
+- Do not include subtotal, grand total, or header rows in line_items.
+- Column order, column count, and column labels vary by vendor — identify each field by its MEANING (a quantity is a whole number of units ordered/shipped, a unit price is a small per-item currency value, a product_id is an alphanumeric code not a sentence), not by position in the row.
+- Extract EVERY row in the line items table, in order, regardless of table length. Do not stop early, summarize, or skip rows because the table is long.
+- Ignore description/text columns entirely — never place a description into product_id.
+
+DOCUMENT TEXT:
+
+Texas Instruments Int Pwr Mgmt IC / Power Management Specialised - PMIC
+IN HS:85423900 ECCN:5A991.g COO:PH
+
+JPMorgan Chase Bank NA, Hong Kong Invoice No. Invoice Date Page No.
+1000 North Main Street, Mansfield, TX 76063 Swift Code: CHASHKHH 74294838 21-JUN-23 16 of 16
+Line Customer/MFG Part No. Quantity Quantity Quantity Unit Price Extended Price
+103 595-SN74HC244DWR 12 12 0 0.525 6.30
+MFG Part No: SN74HC244DWR
+Texas Instruments Tri-State Octal / Buffers & Line Drivers
+IN HS:85423900 ECCN:EAR99 COO:CN
+104 80-ESC107M035AE3AA 6 6 0 0.350 2.10
+MFG Part No: ESC107M035AE3AA
+KEMET 35V 100uF 105C 2k Ho / Aluminium Electrolytic Capacitors - Radial Leaded
+IN HS:85322200 ECCN:EAR99 COO:CN
+Merchandise Handling Freight TAX USD $2,484.05
+Please pay this amount
+2,464.05 0.00 20.00 0.00

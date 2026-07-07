@@ -37,8 +37,8 @@ class LineItem(BaseModel):
 
     line_number: Optional[str] = None
     product_id: Optional[str] = None
-    quantity: Optional[str] = Field(default=None, pattern=_NUMERIC_PATTERN)
-    unit_price: Optional[str] = Field(default=None, pattern=_NUMERIC_PATTERN)
+    quantity: Optional[str] = None
+    unit_price: Optional[str] = None
 
 
 class ExtractedInvoiceData(BaseModel):

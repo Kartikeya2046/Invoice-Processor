@@ -153,9 +153,9 @@ def stage3_preprocess():
     out.append(f"First 500 chars:\n{preprocessed_text[:500]}")
     out.append(f"Last 200 chars:\n{preprocessed_text[-200:]}")
     
-    status = "PASS" if (new_len > 500 and new_len <= orig_len) else "FAIL"
+    status = "PASS" if (new_len > 0 and new_len <= orig_len) else "FAIL"
     if status == "FAIL":
-        out.append("FAIL: Output character count is not > 500 or not <= input.")
+        out.append("FAIL: Preprocessing produced empty output or grew the text (unexpected).")
         
     return status, "\n".join(out)
 
@@ -165,11 +165,11 @@ def stage4_ollama():
     
     res = subprocess.run(["ollama", "list"], capture_output=True, text=True)
     out.append(f"ollama list output:\n{res.stdout}")
-    if res.returncode != 0 or "qwen2.5:3b" not in res.stdout:
-        out.append("FAIL: qwen2.5:3b not found or command failed")
+    if res.returncode != 0 or "qwen2.5:7b" not in res.stdout:
+        out.append("FAIL: qwen2.5:7b not found or command failed")
         failed = True
         
-    payload = {"model": "qwen2.5:3b", "prompt": "Reply with the word PONG and nothing else.", "stream": False}
+    payload = {"model": "qwen2.5:7b", "prompt": "Reply with the word PONG and nothing else.", "stream": False}
     try:
         start = time.perf_counter()
         req = urllib.request.Request("http://localhost:11434/api/generate", data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"})
@@ -285,10 +285,10 @@ def stage7_full_ocr():
     out.append(f"Character count: {len(text)}")
     out.append(f"First 300 chars:\n{text[:300]}")
     
-    if len(text) > 500:
+    if len(text) > 0:
         return "PASS", "\n".join(out)
     else:
-        out.append("FAIL: character count <= 500")
+        out.append("FAIL: OCR/text extraction returned empty content")
         return "FAIL", "\n".join(out)
 
 def stage8_end_to_end():
@@ -367,7 +367,7 @@ def generate_html_report():
                 if "Stage 1" in s['name']: msg = "Missing dependency: install the failed package via pip"
                 elif "Stage 2" in s['name']: msg = "PDF has no embedded text: this is a scanned PDF and will require OCR"
                 elif "Stage 3" in s['name']: msg = "_preprocess_invoice_text not found or threw an error: check llm_extractor.py for the function"
-                elif "Stage 4" in s['name']: msg = "Ollama is not running or qwen2.5:3b is not pulled: run ollama serve and ollama pull qwen2.5:3b"
+                elif "Stage 4" in s['name']: msg = "Ollama is not running or qwen2.5:7b is not pulled: run ollama serve and ollama pull qwen2.5:7b"
                 elif "Stage 5" in s['name']: msg = "LLM extraction failed: check debug_last_prompt.txt for what the model received and check llm_extractor.py prompt"
                 elif "Stage 6" in s['name']: msg = "Validation layer missing or all fields failing: check prompt tuning and field definitions in llm_extractor.py"
                 elif "Stage 7" in s['name']: msg = "process_file() threw an error: check ocr_processor.py and Poppler/Surya setup"

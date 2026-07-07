@@ -50,12 +50,30 @@ _ocr_executor = ThreadPoolExecutor(max_workers=1)
 
 
 def _load_pages(file_path: str) -> List[Image.Image]:
-    """Load a PDF or image file as a list of PIL pages."""
+    """Load a PDF or image file as a list of PIL pages.
+    
+    Images below 200 DPI are upscaled to 300 DPI equivalent before OCR.
+    Surya drops small text at low resolutions (110 DPI loses product codes
+    in dense invoice tables entirely).
+    """
     ext = os.path.splitext(file_path)[1].lower()
     if ext == ".pdf":
-        return convert_from_path(file_path, poppler_path=config.POPPLER_PATH)
+        # PDFs: render at 300 DPI directly via pdf2image
+        return convert_from_path(file_path, dpi=300, poppler_path=config.POPPLER_PATH)
     if ext in IMAGE_EXTENSIONS:
-        return [Image.open(file_path)]
+        img = Image.open(file_path)
+        # Convert RGBA to RGB — Surya doesn't handle alpha channel reliably
+        if img.mode == "RGBA":
+            img = img.convert("RGB")
+        # Upscale if DPI is below 200
+        dpi = img.info.get("dpi", (72, 72))
+        current_dpi = dpi[0] if isinstance(dpi, tuple) else dpi
+        if current_dpi < 200:
+            scale = 300 / current_dpi
+            new_size = (int(img.width * scale), int(img.height * scale))
+            img = img.resize(new_size, Image.LANCZOS)
+            logging.info(f"Upscaled image from {current_dpi:.0f} DPI to 300 DPI equivalent: {new_size}")
+        return [img]
     raise ValueError(f"Unsupported file format: {ext}")
 
 
